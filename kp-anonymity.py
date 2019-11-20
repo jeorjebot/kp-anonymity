@@ -6,8 +6,7 @@ from loguru import logger
 import random
 from node import Node
 from dataset_anonymized import DatasetAnonymized
-
-max_level = 4 # TODO you can change
+max_level = 4
 
 
 def clean_data(dataset_path_to_clean):
@@ -19,7 +18,6 @@ def clean_data(dataset_path_to_clean):
     time_series = pd.read_csv(dataset_path)
     time_series = time_series.loc[0:len(time_series), "Product_Code":"W51"]
     time_series.to_csv(dataset_path_to_clean.replace(".csv", "_Final.csv"), index=False)
-
 
 
 def find_tuple_with_maximum_ncp(fixed_tuple, time_series, key_fixed_tuple, maximum_value, minimum_value):
@@ -49,6 +47,8 @@ def k_anonymity_top_down_approach(time_series=None, k_value=None, columns_list=N
     :param k_value:
     :return:
     """
+    # if len(time_series) < 2*k_value: # < 2*k_value
+    # if len(time_series) < 2*k_value:
     if len(time_series) < 2*k_value:
         logger.info("End Recursion")
         time_series_k_anonymized.append(time_series)
@@ -85,6 +85,41 @@ def k_anonymity_top_down_approach(time_series=None, k_value=None, columns_list=N
                     group_u[u] = time_series[u]
                     last_row = u
                     del time_series[u]
+        # First Round
+        # if len(time_series) > 1:
+        #     v_1 = find_tuple_with_maximum_ncp(group_u[random_tuple], time_series, random_tuple, maximum_value, minimum_value)
+        #     logger.info("First round: Find tuple (v1) that has max ncp {}".format(v_1))
+        #     group_v[v_1] = time_series[v_1]
+        #     del time_series[random_tuple]
+        #
+        # # Second Round
+        # if len(time_series) > 1:
+        #     u_2 = find_tuple_with_maximum_ncp(group_v[v_1], time_series, v_1, maximum_value, minimum_value)
+        #     logger.info("Second Round: Find tuple (u2) that has max ncp {}".format(u_2))
+        #     group_u[u_2] = time_series[u_2]
+        #     del time_series[v_1]
+        #
+        # # Third Round
+        # if len(time_series) > 1:
+        #     v_2 = find_tuple_with_maximum_ncp(group_u[u_2], time_series, u_2, maximum_value, minimum_value)
+        #     logger.info("Third Round: Find tuple (v2) that has max ncp {}".format(v_2))
+        #     group_v[v_2] = time_series[v_2]
+        #     del time_series[u_2]
+        #
+        # # Four round
+        # if len(time_series) > 1:
+        #     u_3 = find_tuple_with_maximum_ncp(group_v[v_2], time_series, v_2, maximum_value, minimum_value)
+        #     logger.info("Four Round: find tuple (u3) that has max ncp {}".format(u_3))
+        #     group_u[u_3] = time_series[u_3]
+        #     del time_series[v_2]
+        #
+        # # Five Round
+        # if len(time_series) > 1:
+        #     v_3 = find_tuple_with_maximum_ncp(group_u[u_3], time_series, u_3, maximum_value, minimum_value)
+        #     logger.info("Five Round: find tuple (v3) that has max ncp {}".format(v_3))
+        #     group_v[v_3] = time_series[v_3]
+        #     del time_series[u_3]
+        #     del time_series[v_3]
 
         # Now Assigned to group with lower uncertain penality
         index_keys_time_series = [x for x in range(0, len(list(time_series.keys())))]
@@ -97,6 +132,8 @@ def k_anonymity_top_down_approach(time_series=None, k_value=None, columns_list=N
             group_v_values = list(group_v.values())
             group_u_values.append(row_temp)
             group_v_values.append(row_temp)
+            # max_temp_value_u, min_temp_value_u = get_list_min_and_max_from_table(group_u_values)
+            # max_temp_value_v, min_temp_value_v = get_list_min_and_max_from_table(group_v_values)
 
             ncp_u = compute_normalized_certainty_penalty_on_ai(group_u_values, maximum_value, minimum_value)
             ncp_v = compute_normalized_certainty_penalty_on_ai(group_v_values, maximum_value, minimum_value)
@@ -110,6 +147,7 @@ def k_anonymity_top_down_approach(time_series=None, k_value=None, columns_list=N
         logger.info("Group u: {}, Group v: {}".format(len(group_u), len(group_v)))
         if len(group_u) > k_value:
             # recursive partition group_u
+            # maximum_value, minimum_value = get_list_min_and_max_from_table(list(group_u.values()))
             k_anonymity_top_down_approach(time_series=group_u, k_value=k_value, columns_list=columns_list,
                                           maximum_value=maximum_value, minimum_value=minimum_value,
                                           time_series_k_anonymized=time_series_k_anonymized)
@@ -119,6 +157,7 @@ def k_anonymity_top_down_approach(time_series=None, k_value=None, columns_list=N
         if len(group_v) > k_value:
             # recursive partition group_v
 
+            # maximum_value, minimum_value = get_list_min_and_max_from_table(list(group_v.values()))
             k_anonymity_top_down_approach(time_series=group_v, k_value=k_value, columns_list=columns_list,
                                           maximum_value=maximum_value, minimum_value=minimum_value,
                                           time_series_k_anonymized=time_series_k_anonymized)
@@ -212,18 +251,42 @@ def main(k_value=None, p_value=None, paa_value=None, dataset_path=None):
                                       time_series_k_anonymized=time_series_k_anonymized)
         logger.info("End k-anonymity top down approach")
 
+        # start kp anonymity
+        # print(list(time_series_k_anonymized[0].values()))
 
-        logger.info("Start node splitting for each groups")
-        # TODO
-        logger.info("End node splitting for each groups")
+        dataset_anonymized = DatasetAnonymized()
+        for group in time_series_k_anonymized:
+            # append group to anonymzed_data (after we will create a complete dataset anonymized)
+            dataset_anonymized.anonymized_data.append(group)
+            # good leaf nodes
+            good_leaf_nodes = list()
+            bad_leaf_nodes = list()
+            # creation root and start splitting node
+            logger.info("Start Splitting node")
+            node = Node(level=1, group=group, paa_value=paa_value)
+            node.start_splitting(p_value, max_level, good_leaf_nodes, bad_leaf_nodes)
+            logger.info("Finish Splitting node")
 
-        logger.info("Save dataset anonymized")
-        # TODO
-        
+            logger.info("Start postprocessing node merge all bad leaf node (if exists) in good "
+                        "leaf node with most similar patter")
+            for x in good_leaf_nodes:
+                logger.info("Good leaf node {}, {}".format(x.size, x.pattern_representation))
+            for x in bad_leaf_nodes:
+                logger.info("Bad leaf node {}".format(x.size))
+            if len(bad_leaf_nodes) > 0:
+                logger.info("Add bad node {} to good node, start postprocessing".format(len(bad_leaf_nodes)))
+                Node.postprocessing(good_leaf_nodes, bad_leaf_nodes)
+                for x in good_leaf_nodes:
+                    logger.info("Now Good leaf node {}, {}".format(x.size, x.pattern_representation))
+
+            dataset_anonymized.pattern_anonymized_data.append(good_leaf_nodes)
+        dataset_anonymized.compute_anonymized_data()
+        dataset_anonymized.save_on_file("Dataset\output.csv")
+
+
 if __name__ == "__main__":
 
     if len(sys.argv) == 5:
-
         k_value = int(sys.argv[1])
         p_value = int(sys.argv[2])
         paa_value = int(sys.argv[3])
