@@ -47,8 +47,8 @@ def k_anonymity_top_down_approach(time_series=None, k_value=None, columns_list=N
     :param k_value:
     :return:
     """
-    # if len(time_series) < 2*k_value: # < 2*k_value
-    # if len(time_series) < 2*k_value:
+    # len(time_series) < 2*k_value
+    # NOTE original paper : if len(time_series) < k_value then return
     if len(time_series) < 2*k_value:
         logger.info("End Recursion")
         time_series_k_anonymized.append(time_series)
@@ -59,20 +59,20 @@ def k_anonymity_top_down_approach(time_series=None, k_value=None, columns_list=N
         # such that time_series_1 and time_series_2 are more local than time_series,
         # and either time_series_1 or time_series_2 have at least k tuples
         logger.info("Start Partition with size {}".format(len(time_series)))
-        keys = list(time_series.keys())
+        keys = list(time_series.keys()) # NOTE G le keys sono gli identificativi delle righe, P1, P2, ..., P819
         rounds = 3
 
         # pick random tuple
-        random_tuple = keys[random.randint(0, len(keys) - 1)]
+        random_tuple = keys[random.randint(0, len(keys) - 1)] # NOTE G prende una key a caso, ad esempio P13
         logger.info("Get random tuple (u1) {}".format(random_tuple))
         group_u = dict()
         group_v = dict()
-        group_u[random_tuple] = time_series[random_tuple]
+        group_u[random_tuple] = time_series[random_tuple] # NOTE assegna al dizionario u, la key e relativi valori: "P13" : [...]
         del time_series[random_tuple]
         last_row = random_tuple
-        for round in range(0, rounds*2 - 1):
+        for round in range(0, rounds*2 - 1): # NOTE quindi 3*2-1, ovvero 5 round
             if len(time_series) > 0:
-                if round % 2 == 0:
+                if round % 2 == 0: # NOTE if else per alternare le due azioni, siccome alterna pari / dispari
                     v = find_tuple_with_maximum_ncp(group_u[last_row], time_series, last_row, maximum_value, minimum_value)
                     logger.info("{} round: Find tuple (v) that has max ncp {}".format(round +1,v))
 
@@ -175,9 +175,9 @@ def compute_normalized_certainty_penalty_on_ai(table=None, maximum_value=None, m
     z_1 = list()
     y_1 = list()
     a = list()
-    for index_attribute in range(0, len(table[0])):
+    for index_attribute in range(0, len(table[0])): # NOTE da 0 a 51
         temp_z1 = 0
-        temp_y1 = float('inf')
+        temp_y1 = float('inf') # NOTE : infinito
         for row in table:
             if row[index_attribute] > temp_z1:
                 temp_z1 = row[index_attribute]
