@@ -226,7 +226,7 @@ def main(k_value=None, p_value=None, paa_value=None, dataset_path=None):
 
         dataset_anonymized = DatasetAnonymized()
         for group in time_series_k_anonymized:
-            # append group to anonymzed_data (after we will create a complete dataset anonymized)
+            # append group to anonymized_data (after we will create a complete dataset anonymized)
             dataset_anonymized.anonymized_data.append(group)
             # good leaf nodes
             good_leaf_nodes = list()
