@@ -35,6 +35,8 @@ def find_tuple_with_maximum_ncp(fixed_tuple, time_series, key_fixed_tuple, maxim
             ncp = compute_normalized_certainty_penalty_on_ai([fixed_tuple, time_series[key]], maximum_value, minimum_value)
             if ncp >= max_value:
                 tuple_with_max_ncp = key
+                max_value = ncp
+    logger.info("Max ncp found: {} with tuple {} ".format(max_value, tuple_with_max_ncp))           
     return tuple_with_max_ncp
 
 
@@ -68,7 +70,7 @@ def k_anonymity_top_down_approach(time_series=None, k_value=None, columns_list=N
         group_u = dict()
         group_v = dict()
         group_u[random_tuple] = time_series[random_tuple] # NOTE assegna al dizionario u, la key e relativi valori: "P13" : [...]
-        del time_series[random_tuple]
+        #del time_series[random_tuple]
         last_row = random_tuple
         for round in range(0, rounds*2 - 1): # NOTE quindi 3*2-1, ovvero 5 round
             if len(time_series) > 0:
@@ -76,64 +78,31 @@ def k_anonymity_top_down_approach(time_series=None, k_value=None, columns_list=N
                     v = find_tuple_with_maximum_ncp(group_u[last_row], time_series, last_row, maximum_value, minimum_value)
                     logger.info("{} round: Find tuple (v) that has max ncp {}".format(round +1,v))
 
+                    group_v.clear() # NOTE non dovrebbero rimanerci valori come succede ora
                     group_v[v] = time_series[v]
                     last_row = v
-                    del time_series[v]
+                    #del time_series[v]
                 else:
                     u = find_tuple_with_maximum_ncp(group_v[last_row], time_series, last_row, maximum_value, minimum_value)
                     logger.info("{} round: Find tuple (u) that has max ncp {}".format(round+1, u))
+                    
+                    group_u.clear() # NOTE non dovrebbero rimanerci valori come succede ora
                     group_u[u] = time_series[u]
                     last_row = u
-                    del time_series[u]
-        # First Round
-        # if len(time_series) > 1:
-        #     v_1 = find_tuple_with_maximum_ncp(group_u[random_tuple], time_series, random_tuple, maximum_value, minimum_value)
-        #     logger.info("First round: Find tuple (v1) that has max ncp {}".format(v_1))
-        #     group_v[v_1] = time_series[v_1]
-        #     del time_series[random_tuple]
-        #
-        # # Second Round
-        # if len(time_series) > 1:
-        #     u_2 = find_tuple_with_maximum_ncp(group_v[v_1], time_series, v_1, maximum_value, minimum_value)
-        #     logger.info("Second Round: Find tuple (u2) that has max ncp {}".format(u_2))
-        #     group_u[u_2] = time_series[u_2]
-        #     del time_series[v_1]
-        #
-        # # Third Round
-        # if len(time_series) > 1:
-        #     v_2 = find_tuple_with_maximum_ncp(group_u[u_2], time_series, u_2, maximum_value, minimum_value)
-        #     logger.info("Third Round: Find tuple (v2) that has max ncp {}".format(v_2))
-        #     group_v[v_2] = time_series[v_2]
-        #     del time_series[u_2]
-        #
-        # # Four round
-        # if len(time_series) > 1:
-        #     u_3 = find_tuple_with_maximum_ncp(group_v[v_2], time_series, v_2, maximum_value, minimum_value)
-        #     logger.info("Four Round: find tuple (u3) that has max ncp {}".format(u_3))
-        #     group_u[u_3] = time_series[u_3]
-        #     del time_series[v_2]
-        #
-        # # Five Round
-        # if len(time_series) > 1:
-        #     v_3 = find_tuple_with_maximum_ncp(group_u[u_3], time_series, u_3, maximum_value, minimum_value)
-        #     logger.info("Five Round: find tuple (v3) that has max ncp {}".format(v_3))
-        #     group_v[v_3] = time_series[v_3]
-        #     del time_series[u_3]
-        #     del time_series[v_3]
+                    #del time_series[u]
 
         # Now Assigned to group with lower uncertain penality
+        # NOTE però ha eliminato 6 time_series, che sono quelle generatrici? (in realtà somo due...)
         index_keys_time_series = [x for x in range(0, len(list(time_series.keys())))]
         random.shuffle(index_keys_time_series)
         # add random row to group with lower NCP
-        keys = [list(time_series.keys())[x] for x in index_keys_time_series]
+        keys = [list(time_series.keys())[x] for x in index_keys_time_series] # NOTE fa lo shuffle e copia
         for key in keys:
             row_temp = time_series[key]
             group_u_values = list(group_u.values())
             group_v_values = list(group_v.values())
             group_u_values.append(row_temp)
             group_v_values.append(row_temp)
-            # max_temp_value_u, min_temp_value_u = get_list_min_and_max_from_table(group_u_values)
-            # max_temp_value_v, min_temp_value_v = get_list_min_and_max_from_table(group_v_values)
 
             ncp_u = compute_normalized_certainty_penalty_on_ai(group_u_values, maximum_value, minimum_value)
             ncp_v = compute_normalized_certainty_penalty_on_ai(group_v_values, maximum_value, minimum_value)
@@ -175,24 +144,25 @@ def compute_normalized_certainty_penalty_on_ai(table=None, maximum_value=None, m
     z_1 = list()
     y_1 = list()
     a = list()
-    for index_attribute in range(0, len(table[0])): # NOTE da 0 a 51
+    for index_attribute in range(0, len(table[0])): # NOTE da 0 a 51, per ogni attributo
+        # NOTE vengono reinizializzati ogni iterazione
         temp_z1 = 0
         temp_y1 = float('inf') # NOTE : infinito
-        for row in table:
+        for row in table: # NOTE sono due, quella "fissata" e quella che sto confrontando
             if row[index_attribute] > temp_z1:
                 temp_z1 = row[index_attribute]
             if row[index_attribute] < temp_y1:
                 temp_y1 = row[index_attribute]
-        z_1.append(temp_z1)
-        y_1.append(temp_y1)
-        a.append(abs(maximum_value[index_attribute] - minimum_value[index_attribute]))
+        z_1.append(temp_z1) # NOTE appendo il maggior z1 tra i due
+        y_1.append(temp_y1) # NOTE appendo il minor y1 tra i due
+        a.append(abs(maximum_value[index_attribute] - minimum_value[index_attribute])) # NOTE è il |A| di ogni attributo, calcolato su tutta la tabella!!!
     ncp_t = 0
     for index in range(0, len(z_1)):
         try:
             ncp_t += (z_1[index] - y_1[index]) / a[index]
         except ZeroDivisionError:
             ncp_t += 0
-    ncp_T = len(table)*ncp_t
+    ncp_T = len(table)*ncp_t # NOTE perchè tanto siccome il range di generalizzazione è lo stesso x le 2 tuple, tanto vale x calcolare NCP intera "tabella" basta moltiplicare x il numero di righe (2)
     return ncp_T
 
 
