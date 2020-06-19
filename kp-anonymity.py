@@ -193,6 +193,7 @@ def main(k_value=None, p_value=None, paa_value=None, dataset_path=None):
     :param dataset_path:
     :return:
     """
+
     if os.path.isfile(dataset_path):
         # read time_series_from_file
         time_series = pd.read_csv(dataset_path)
@@ -227,7 +228,7 @@ def main(k_value=None, p_value=None, paa_value=None, dataset_path=None):
         dataset_anonymized = DatasetAnonymized()
         for group in time_series_k_anonymized:
             # append group to anonymized_data (after we will create a complete dataset anonymized)
-            dataset_anonymized.anonymized_data.append(group)
+            dataset_anonymized.anonymized_data.append(group) #NOTE metto un k-group dentro a questa struttura
             # good leaf nodes
             good_leaf_nodes = list()
             bad_leaf_nodes = list()
@@ -263,6 +264,7 @@ if __name__ == "__main__":
         dataset_path = sys.argv[4]
         if k_value > p_value:
             main(k_value=k_value, p_value=p_value, paa_value=paa_value, dataset_path=dataset_path)
+            # NOTE: PAA = Piecewise Aggregate Approximation
         else:
             print("[*] Usage: python kp-anonymity.py k_value p_value paa_value dataset.csv")
             print("[*] k_value should be greater than p_value")

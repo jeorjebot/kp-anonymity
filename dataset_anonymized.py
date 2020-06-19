@@ -15,10 +15,10 @@ class DatasetAnonymized:
         :return:
         """
         logger.info("Start creation dataset anonymized")
-        for index in range(0, len(self.anonymized_data)):
+        for index in range(0, len(self.anonymized_data)): #NOTE gli anonymiez_data sono divisi in k-groups
             logger.info("Start creation Group {}".format(index))
 
-            group = self.anonymized_data[index]
+            group = self.anonymized_data[index] #NOTE prende un k-group
             list_good_leaf_node = self.pattern_anonymized_data[index]
             max_value = np.amax(np.array(list(group.values())), 0)
             min_value = np.amin(np.array(list(group.values())), 0)
