@@ -235,10 +235,10 @@ def main(k_value=None, p_value=None, paa_value=None, dataset_path=None):
             # creation root and start splitting node
             logger.info("Start Splitting node")
             node = Node(level=1, group=group, paa_value=paa_value)
-            node.start_splitting(p_value, max_level, good_leaf_nodes, bad_leaf_nodes)
+            node.start_splitting(p_value, max_level, good_leaf_nodes, bad_leaf_nodes) # NOTE il nodo inizia la split node
             logger.info("Finish Splitting node")
 
-            logger.info("Start postprocessing node merge all bad leaf node (if exists) in good "
+            logger.info("Start postprocessing node merge all bad leaf node (if exists) in good " # NOTE : post processing dei bad leaf
                         "leaf node with most similar patter")
             for x in good_leaf_nodes:
                 logger.info("Good leaf node {}, {}".format(x.size, x.pattern_representation))
@@ -251,7 +251,7 @@ def main(k_value=None, p_value=None, paa_value=None, dataset_path=None):
                     logger.info("Now Good leaf node {}, {}".format(x.size, x.pattern_representation))
 
             dataset_anonymized.pattern_anonymized_data.append(good_leaf_nodes)
-        dataset_anonymized.compute_anonymized_data()
+        dataset_anonymized.compute_anonymized_data() # NOTE cosa fa? sembra mettere tutto insieme..
         dataset_anonymized.save_on_file("Dataset/output.csv")
 
 
