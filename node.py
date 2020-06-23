@@ -17,7 +17,7 @@ class Node:
             self.pattern_representation = pr
         else:
             self.pattern_representation = pattern_representation
-        self.members = list(group.keys())  # members   time series contained in N
+        self.members = list(group.keys())  # members time series contained in N
         self.size = len(group)  # numbers of time series contained
         self.label = label  # each node has tree possible labels: bad-leaf, good-leaf or intermediate
         self.group = group  # group obtained from k-anonymity top-down
@@ -65,27 +65,31 @@ class Node:
         child nodes (including TB and TG) and nc >= 2, N will really be split into nc children and then the node 
         splitting procedure will be recursively invoked on each of them 
         """
-        tentative_child_node = dict()
+        tentative_child_node = dict() # NOTE è un dizionario di array, ogni array contiene le time series che hanno stesso pr (pattern repres.)
         temp_level = self.level + 1
         for key, value in self.group.items():
             # to reduce dimensionality
             data = np.array(value)
             data_znorm = znorm(data)
             data_paa = paa(data_znorm, self.paa_value)
-            pr = ts_to_string(data_paa, cuts_for_asize(temp_level))
+            pr = ts_to_string(data_paa, cuts_for_asize(temp_level)) # NOTE crea il pattern sax della serie
+
+            # NOTE se il pattern è uguale a uno presente, accodalo nell'array dentro al dizionario, altimenti crea un nuovo array con quel pr
             if pr in tentative_child_node.keys():
                 tentative_child_node[pr].append(key)
             else:
                 tentative_child_node[pr] = [key]
-        length_all_tentative_child = [len(x) for x in list(tentative_child_node.values())]
-        good_leaf = np.all(np.array(length_all_tentative_child) < p_value)
 
+        length_all_tentative_child = [len(x) for x in list(tentative_child_node.values())] # NOTE crea un array di size degli array del dizionario [5,6,4,5] -> sono le size dei vari tentativi di child
+        good_leaf = np.all(np.array(length_all_tentative_child) < p_value) # NOTE np.all() ritorna true se tutti gli elementi sono true.. 
+       
+        # NOTE quindi se tutti sono bad tentative allora lo segno come good_leaf e non faccio lo split
         if good_leaf:
             logger.info("Good-leaf, all_tentative_child are < {}".format(p_value))
             self.label = "good-leaf"
             good_leaf_nodes.append(self)
             return
-        else:
+        else: # NOTE se ho avuto almeno un tentativo > p_value, faccio lo split
             logger.info("N can be split")
             logger.info("Compute tentative good nodes and tentative bad nodes")
             # tentative good nodes
