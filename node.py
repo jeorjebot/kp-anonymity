@@ -97,7 +97,13 @@ class Node:
             pr_keys = list(tentative_child_node.keys()) #NOTE sono le chiavi dei child node.. ma sono dei pattern!! "aaaabb" etc etc
             # get index tentative good node
             pattern_representation_tg = list()
-            tg_nodes_index = list(np.where(np.array(length_all_tentative_child) >= p_value)[0]) #NOTE la sintassi è un po' strana ma mi ritorna gli indici in length.. con size > p
+
+            tg_nodes_index = list(np.where(np.array(length_all_tentative_child) >= p_value)[0]) #NOTE mi ritorna gli indici in length_all_tentat con size > p
+            # NOTE sintassi strana: questo accrocchio ritorna una lista di array con le posizioni degli elementi che soddisfano la condizione. 
+            # siccome length_all_tentative_child è monodimensionale, la lista conterrà un solo array
+            # se fosse bidimensionale, mi ritornerebbe 2 array, con gli indici di x,y degli elementi
+            # ecco spiegato perchè metto [0], mi interessa il primo array siccome so che length_all ha solo una dimensione -> mi interessa solo il primo array 
+            
             # logger.info(pr_keys)
             tg_nodes = list()
             for index in tg_nodes_index:
@@ -123,38 +129,38 @@ class Node:
 
             #TODO sono arrivato qui!!!
 
-            total_size_tb_nodes = 0
+            total_size_tb_nodes = 0 #NOTE per vedere se raggiungono p e quindi fare il childmerge
             for tb_node in tb_nodes:
                 total_size_tb_nodes += len(tb_node)
 
-            if total_size_tb_nodes >= p_value:
+            if total_size_tb_nodes >= p_value: #NOTE childmerge
                 logger.info("Merge all bad nodes in a single node, and label it as good-leaf")
                 child_merge_node_group = dict()
                 for tb_node in tb_nodes:
                     for key, value in tb_node.items():
-                        child_merge_node_group[key] = value
+                        child_merge_node_group[key] = value #NOTE sposta tutto in childmerge
                 node_merge = Node(level=self.level, pattern_representation=self.pattern_representation,
-                                  label="good-leaf", group=child_merge_node_group, parent=self)
-                self.child_node.append(node_merge)
+                                  label="good-leaf", group=child_merge_node_group, parent=self) #NOTE lo inizializzano con tt i parametri
+                self.child_node.append(node_merge) #NOTE viene aggiunto alla struttura
                 good_leaf_nodes.append(node_merge)
 
-                nc = len(tg_nodes) + len(tb_nodes)  # tb_nodes sono un po' perplesso su questo tb_nodes
+                nc = len(tg_nodes) + len(tb_nodes) 
                 logger.info("Split only tg_nodes {0}".format(len(tg_nodes)))
                 if nc >= 2:
-                    for index in range(0, len(tg_nodes)):
+                    for index in range(0, len(tg_nodes)): #NOTE aggiunge i tg node ai child e continua lo splitting
                         node = Node(level=self.level, pattern_representation=pattern_representation_tg[index],
                                     label="intermediate", group=tg_nodes[index], parent=self)
                         self.child_node.append(node)
                         node.start_splitting(p_value, max_level, good_leaf_nodes, bad_leaf_nodes)
                 else:
-                    for index in range(0, len(tg_nodes)):
+                    for index in range(0, len(tg_nodes)): #NOTE aggiunge i tg ma non fa splitting
                         node = Node(level=self.level, pattern_representation=pattern_representation_tg[index],
                                     label="good-leaf", group=tg_nodes[index], parent=self)
                         self.child_node.append(node)
                         good_leaf_nodes.append(node)
 
-            else:
-                nc = len(tg_nodes) + len(tb_nodes)  # tb_nodes sono un po' perplesso su questo tb_nodes
+            else: # NOTE se non c'è childmerge
+                nc = len(tg_nodes) + len(tb_nodes) #NOTE come sopra ma senza childmerge, vedi il logger.info qua sotto
                 logger.info("Label all tb_node {0} as bad-leaf and split only tg_nodes {1}".format(len(tb_nodes),len(tg_nodes)))
                 for index in range(0, len(tb_nodes)):
                     node = Node(level=self.level, pattern_representation=pattern_representation_tb[index], label="bad-leaf",
