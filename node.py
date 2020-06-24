@@ -182,16 +182,15 @@ class Node:
     def postprocessing(good_leaf_nodes, bad_leaf_nodes):
         # count = sum(1 for a, b in zip(seq1, seq2) if a != b)
         difference = float('inf')
-        for bad_leaf_node in bad_leaf_nodes:
+        for bad_leaf_node in bad_leaf_nodes: #TODO dovrebbero venire ordinate in ordine ascendente, anche se non impatta, e dovebbe venire joinato con il nodo con minore size, a parità di PR
             pattern_representation_bad_node = bad_leaf_node.pattern_representation
             choose_node = None
             for index in range(0, len(good_leaf_nodes)):
                 pattern_representation_good_node = good_leaf_nodes[index].pattern_representation
                 difference_good_bad = sum(1 for a, b in zip(pattern_representation_good_node,
                                                             pattern_representation_bad_node) if a != b)
-
                 #NOTE difference_good_bad conta le "lettere" di differenza tra le due pattern repres. "aaab" e "abbb" : 2 diff
-                # TODO sono arrivato qui                                            
+                                         
                 if difference_good_bad < difference:
                     choose_node = index
 
@@ -208,9 +207,9 @@ class Node:
         :param node_to_add:
         :return:
         """
-        for key, value in node_to_add.group.items():
+        for key, value in node_to_add.group.items():  #NOTE aggiunge tutti gli elementi del bad leaf al good leaf
             node_original.group[key] = value
-        node_original.members = list(node_original.group.keys())
+        node_original.members = list(node_original.group.keys()) #NOTE aggiorna size e members
         node_original.size = len(node_original.group)
 
     def maximize_level_node(self, max_level):
@@ -227,22 +226,22 @@ class Node:
             data = np.array(values_group[0])
             data_znorm = znorm(data)
             data_paa = paa(data_znorm, self.paa_value)
-            pr = ts_to_string(data_paa, cuts_for_asize(temp_level))
+            pr = ts_to_string(data_paa, cuts_for_asize(temp_level)) #NOTE prende il primo elemento e fa il pr con level+1, sarà il campione con cui confrontare gli altri
             for index in range(1, len(values_group)):
                 data = np.array(values_group[index])
                 data_znorm = znorm(data)
                 data_paa = paa(data_znorm, self.paa_value)
                 pr_2 = ts_to_string(data_paa, cuts_for_asize(temp_level))
                 if pr_2 != pr:
-                    equal = False
+                    equal = False #NOTE fa il check per tutti gli altri elementi se hanno stesso pr
             if equal:
-                self.level = temp_level
-        if original_level != self.level:
+                self.level = temp_level #NOTE tutti hanno stesso pr, quindi il livello si può incrementare
+        if original_level != self.level: #NOTE nuovo livello, si aggiornano un po' di attributi
             logger.info("New level for node: {}".format(self.level))
             data = np.array(values_group[0])
             data_znorm = znorm(data)
             data_paa = paa(data_znorm, self.paa_value)
             self.pattern_representation = ts_to_string(data_paa, cuts_for_asize(self.level))
         else:
-            logger.info("Can't split again, max level already reached")
+            logger.info("Can't split again, max level already reached") #NOTE: max level reached
 
