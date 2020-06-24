@@ -94,32 +94,34 @@ class Node:
             logger.info("Compute tentative good nodes and tentative bad nodes")
             # tentative good nodes
             # index of nodes in tentative_child_node with more p_value
-            pr_keys = list(tentative_child_node.keys())
+            pr_keys = list(tentative_child_node.keys()) #NOTE sono le chiavi dei child node.. ma sono dei pattern!! "aaaabb" etc etc
             # get index tentative good node
             pattern_representation_tg = list()
-            tg_nodes_index = list(np.where(np.array(length_all_tentative_child) >= p_value)[0])
+            tg_nodes_index = list(np.where(np.array(length_all_tentative_child) >= p_value)[0]) #NOTE la sintassi è un po' strana ma mi ritorna gli indici in length.. con size > p
             # logger.info(pr_keys)
             tg_nodes = list()
             for index in tg_nodes_index:
-                keys_elements = tentative_child_node[pr_keys[index]]
+                keys_elements = tentative_child_node[pr_keys[index]] #NOTE ritrova le chiavi del good leaf: pr[index] trova il pattern corrispondente, e in tentative_child il pattern è associato alle keys delle time series
                 dict_temp = dict()
                 for key in keys_elements:
-                    dict_temp[key] = self.group[key]
+                    dict_temp[key] = self.group[key] # NOTE aggiunge le time series corrispondenti alle chiavi
                 tg_nodes.append(dict_temp)
                 pattern_representation_tg.append(pr_keys[index])
 
             # tentative bad nodes
-            tb_nodes_index = list(np.where(np.array(length_all_tentative_child) < p_value)[0])
+            tb_nodes_index = list(np.where(np.array(length_all_tentative_child) < p_value)[0]) #NOTE come sopra ma < p_value
             tb_nodes = list()
             pattern_representation_tb = list()
 
-            for index in tb_nodes_index:
+            for index in tb_nodes_index: #NOTE come sopra, crea la lista dei tb_nodes e appende la loro rappresentazione sax
                 keys_elements = tentative_child_node[pr_keys[index]]
                 dict_temp = dict()
                 for key in keys_elements:
                     dict_temp[key] = self.group[key]
                 tb_nodes.append(dict_temp)
                 pattern_representation_tb.append(pr_keys[index])
+
+            #TODO sono arrivato qui!!!
 
             total_size_tb_nodes = 0
             for tb_node in tb_nodes:
