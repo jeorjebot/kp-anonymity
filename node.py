@@ -127,8 +127,6 @@ class Node:
                 tb_nodes.append(dict_temp)
                 pattern_representation_tb.append(pr_keys[index])
 
-            #TODO sono arrivato qui!!!
-
             total_size_tb_nodes = 0 #NOTE per vedere se raggiungono p e quindi fare il childmerge
             for tb_node in tb_nodes:
                 total_size_tb_nodes += len(tb_node)
@@ -191,6 +189,9 @@ class Node:
                 pattern_representation_good_node = good_leaf_nodes[index].pattern_representation
                 difference_good_bad = sum(1 for a, b in zip(pattern_representation_good_node,
                                                             pattern_representation_bad_node) if a != b)
+
+                #NOTE difference_good_bad conta le "lettere" di differenza tra le due pattern repres. "aaab" e "abbb" : 2 diff
+                # TODO sono arrivato qui                                            
                 if difference_good_bad < difference:
                     choose_node = index
 
