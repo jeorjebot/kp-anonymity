@@ -7,8 +7,9 @@ from loguru import logger
 from node import Node
 from pathlib import Path
 from dataset_anonymized import DatasetAnonymized
-max_level = 4
 
+max_level = 4
+output_path = "Dataset/output.csv"
 
 def clean_data(dataset_path_to_clean):
     """
@@ -223,12 +224,12 @@ def main_naive(k_value=None, p_value=None, paa_value=None, dataset_path=None):
         logger.info("End k-anonymity top down approach")
 
         # start kp anonymity
-        # print(list(time_series_k_anonymized[0].values()))
-
+        # print(list(time_series_k_anonymized[0].values())) 
+        
         dataset_anonymized = DatasetAnonymized()
         for group in time_series_k_anonymized:
             # append group to anonymized_data (after we will create a complete dataset anonymized)
-            dataset_anonymized.anonymized_data.append(group) #NOTE metto un k-group dentro a questa struttura
+            dataset_anonymized.anonymized_data.append(group) #TODO metto un k-group dentro a questa struttura
             # good leaf nodes
             good_leaf_nodes = list()
             bad_leaf_nodes = list()
@@ -250,9 +251,9 @@ def main_naive(k_value=None, p_value=None, paa_value=None, dataset_path=None):
                 for x in good_leaf_nodes:
                     logger.info("Now Good leaf node {}, {}".format(x.size, x.pattern_representation))
 
-            dataset_anonymized.pattern_anonymized_data.append(good_leaf_nodes)
+            dataset_anonymized.pattern_anonymized_data.append(good_leaf_nodes) #TODO pattern_anonymized_data è una lista che contiene le liste dei good_leaf_nodes
         dataset_anonymized.compute_anonymized_data() # NOTE cosa fa? sembra mettere tutto insieme..
-        dataset_anonymized.save_on_file("Dataset/output.csv")
+        dataset_anonymized.save_on_file(Path(output_path))
 
 def main_kapra(k_value=None, p_value=None, paa_value=None, dataset_path=None):
     """
@@ -323,7 +324,7 @@ def main_kapra(k_value=None, p_value=None, paa_value=None, dataset_path=None):
 
             dataset_anonymized.pattern_anonymized_data.append(good_leaf_nodes)
         dataset_anonymized.compute_anonymized_data() # NOTE cosa fa? sembra mettere tutto insieme..
-        dataset_anonymized.save_on_file("Dataset/output.csv")
+        dataset_anonymized.save_on_file(Path(output_path))
 
 
 if __name__ == "__main__":
