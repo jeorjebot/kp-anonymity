@@ -1,8 +1,8 @@
 ### my gitignore ###
-.DS_Store
+.DS_Store 
 .vscode
 Dataset/output.csv
-
+prova.py
 
 
 # Created by https://www.toptal.com/developers/gitignore/api/visualstudio,python
