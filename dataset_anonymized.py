@@ -11,7 +11,7 @@ class DatasetAnonymized:
 
     def compute_anonymized_data(self):
         """
-        create dataset ready to be anonymized
+        Create dataset ready to be anonymized
         :return:
         """
         logger.info("Start creation dataset anonymized")
