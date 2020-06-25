@@ -2,16 +2,17 @@ import os
 import numpy as np
 import pandas as pd
 import sys
-from loguru import logger
 import random
+from loguru import logger
 from node import Node
+from pathlib import Path
 from dataset_anonymized import DatasetAnonymized
 max_level = 4
 
 
 def clean_data(dataset_path_to_clean):
     """
-        Print on file the dataset cleaned, in this case remove all columns normalized
+    Print on file the dataset cleaned, in this case remove all columns normalized
     :param dataset_path_to_clean:
     :return:
     """
@@ -165,7 +166,7 @@ def compute_normalized_certainty_penalty_on_ai(table=None, maximum_value=None, m
 
 def get_list_min_and_max_from_table(table):
     """
-        From a table get a list of maximum and minimum value of each attribut
+    From a table get a list of maximum and minimum value of each attribut
     :param table:
     :return: list_of_minimum_value, list_of_maximum_value
     """
@@ -182,15 +183,18 @@ def get_list_min_and_max_from_table(table):
 
     return attributes_minimum_value, attributes_maximum_value
 
-def main(k_value=None, p_value=None, paa_value=None, dataset_path=None):
+def main_naive(k_value=None, p_value=None, paa_value=None, dataset_path=None):
     """
-
+    k-P anonymity based on work of Shou et al. 2011,
+    Supporting Pattern-Preserving Anonymization for Time-Series Data
+    implementation of Naive approach
     :param k_value:
     :param p_value:
     :param dataset_path:
     :return:
     """
-    if os.path.isfile(dataset_path):
+
+    if dataset_path.is_file():
         # read time_series_from_file
         time_series = pd.read_csv(dataset_path)
 
@@ -224,17 +228,17 @@ def main(k_value=None, p_value=None, paa_value=None, dataset_path=None):
         dataset_anonymized = DatasetAnonymized()
         for group in time_series_k_anonymized:
             # append group to anonymized_data (after we will create a complete dataset anonymized)
-            dataset_anonymized.anonymized_data.append(group)
+            dataset_anonymized.anonymized_data.append(group) #NOTE metto un k-group dentro a questa struttura
             # good leaf nodes
             good_leaf_nodes = list()
             bad_leaf_nodes = list()
             # creation root and start splitting node
             logger.info("Start Splitting node")
             node = Node(level=1, group=group, paa_value=paa_value)
-            node.start_splitting(p_value, max_level, good_leaf_nodes, bad_leaf_nodes)
+            node.start_splitting(p_value, max_level, good_leaf_nodes, bad_leaf_nodes) # NOTE il nodo inizia la split node
             logger.info("Finish Splitting node")
 
-            logger.info("Start postprocessing node merge all bad leaf node (if exists) in good "
+            logger.info("Start postprocessing node merge all bad leaf node (if exists) in good " # NOTE : post processing dei bad leaf
                         "leaf node with most similar patter")
             for x in good_leaf_nodes:
                 logger.info("Good leaf node {}, {}".format(x.size, x.pattern_representation))
@@ -247,21 +251,99 @@ def main(k_value=None, p_value=None, paa_value=None, dataset_path=None):
                     logger.info("Now Good leaf node {}, {}".format(x.size, x.pattern_representation))
 
             dataset_anonymized.pattern_anonymized_data.append(good_leaf_nodes)
-        dataset_anonymized.compute_anonymized_data()
+        dataset_anonymized.compute_anonymized_data() # NOTE cosa fa? sembra mettere tutto insieme..
+        dataset_anonymized.save_on_file("Dataset/output.csv")
+
+def main_kapra(k_value=None, p_value=None, paa_value=None, dataset_path=None):
+    """
+    k-P anonymity based on work of Shou et al. 2011,
+    Supporting Pattern-Preserving Anonymization for Time-Series Data
+    implementation of KAPRA approach
+    :param k_value:
+    :param p_value:
+    :param dataset_path:
+    :return:
+    """
+
+    if dataset_path.is_file():
+        # read time_series_from_file
+        time_series = pd.read_csv(dataset_path)
+
+        # get columns name
+        columns = list(time_series.columns)
+        columns.pop(0)  # remove product code
+        # save all maximum value for each attribute
+        attributes_maximum_value = list()
+        attributes_minimum_value = list()
+        for column in columns:
+            attributes_maximum_value.append(time_series[column].max())
+            attributes_minimum_value.append(time_series[column].min())
+        time_series_dict = dict()
+
+        # save dict file instead pandas
+        for index, row in time_series.iterrows():
+            time_series_dict[row["Product_Code"]] = list(row["W0":"W51"])
+
+        # start k_anonymity_top_down
+        time_series_k_anonymized = list()
+        time_series_dict_copy = time_series_dict.copy()
+        logger.info("Start k-anonymity top down approach")
+        k_anonymity_top_down_approach(time_series=time_series_dict_copy, k_value=k_value, columns_list=columns,
+                                      maximum_value=attributes_maximum_value, minimum_value=attributes_minimum_value,
+                                      time_series_k_anonymized=time_series_k_anonymized)
+        logger.info("End k-anonymity top down approach")
+
+        # start kp anonymity
+        # print(list(time_series_k_anonymized[0].values()))
+
+        dataset_anonymized = DatasetAnonymized()
+        for group in time_series_k_anonymized:
+            # append group to anonymized_data (after we will create a complete dataset anonymized)
+            dataset_anonymized.anonymized_data.append(group) #NOTE metto un k-group dentro a questa struttura
+            # good leaf nodes
+            good_leaf_nodes = list()
+            bad_leaf_nodes = list()
+            # creation root and start splitting node
+            logger.info("Start Splitting node")
+            node = Node(level=1, group=group, paa_value=paa_value)
+            node.start_splitting(p_value, max_level, good_leaf_nodes, bad_leaf_nodes) # NOTE il nodo inizia la split node
+            logger.info("Finish Splitting node")
+
+            logger.info("Start postprocessing node merge all bad leaf node (if exists) in good " # NOTE : post processing dei bad leaf
+                        "leaf node with most similar patter")
+            for x in good_leaf_nodes:
+                logger.info("Good leaf node {}, {}".format(x.size, x.pattern_representation))
+            for x in bad_leaf_nodes:
+                logger.info("Bad leaf node {}".format(x.size))
+            if len(bad_leaf_nodes) > 0:
+                logger.info("Add bad node {} to good node, start postprocessing".format(len(bad_leaf_nodes)))
+                Node.postprocessing(good_leaf_nodes, bad_leaf_nodes)
+                for x in good_leaf_nodes:
+                    logger.info("Now Good leaf node {}, {}".format(x.size, x.pattern_representation))
+
+            dataset_anonymized.pattern_anonymized_data.append(good_leaf_nodes)
+        dataset_anonymized.compute_anonymized_data() # NOTE cosa fa? sembra mettere tutto insieme..
         dataset_anonymized.save_on_file("Dataset/output.csv")
 
 
 if __name__ == "__main__":
 
-    if len(sys.argv) == 5:
-        k_value = int(sys.argv[1])
-        p_value = int(sys.argv[2])
-        paa_value = int(sys.argv[3])
-        dataset_path = sys.argv[4]
-        if k_value > p_value:
-            main(k_value=k_value, p_value=p_value, paa_value=paa_value, dataset_path=dataset_path)
-        else:
-            print("[*] Usage: python kp-anonymity.py k_value p_value paa_value dataset.csv")
+    if len(sys.argv) == 6:
+        algorithm = sys.argv[1] #NOTE naive o kapra
+        k_value = int(sys.argv[2])
+        p_value = int(sys.argv[3])
+        paa_value = int(sys.argv[4])
+        dataset_path = sys.argv[5] #NOTE la gestione del path non va bene, deve essere assoluta rispetto a unix/win
+        if k_value < p_value:
+            print("[*] Usage: python kp-anonymity.py algorithm k_value p_value paa_value dataset.csv")
             print("[*] k_value should be greater than p_value")
+        elif algorithm == "naive":
+            main_naive(k_value=k_value, p_value=p_value, paa_value=paa_value, dataset_path=Path(dataset_path))
+        elif algorithm == "kapra":    
+            main_kapra(k_value=k_value, p_value=p_value, paa_value=paa_value, dataset_path=Path(dataset_path))
+        else:
+            print("[*] Usage: python kp-anonymity.py algorithm k_value p_value paa_value dataset.csv")
+            print("[*] Algorithm supported: naive, kapra")
+            
     else:
-        print("[*] Usage: python kp-anonymity.py k_value p_value paa_value dataset.csv")
+        print("[*] Usage: python kp-anonymity.py algorithm k_value p_value paa_value dataset.csv")
