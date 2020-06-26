@@ -30,6 +30,7 @@ class DatasetAnonymized:
                 for column_index in range(0, len(max_value)):
                     value_row.append("[{}-{}]".format(min_value[column_index], max_value[column_index])) # NOTE anonimizza con il min e max del gruppo, ovvero l'envelope
                 for node in list_good_leaf_node: #NOTE itera tutti i nodi good leaf relativi al k-group, cercando il nodo (P-group) che contenga la time series, in modo da aggiungere il PR
+                    if key in node.group.keys():
                         value_row.append(node.pattern_representation) #NOTE aggiunge la PR relativa alla riga
                 value_row.append("Group: {}".format(index))
                 self.final_data_anonymized[key] = value_row #NOTE la riga comprensiva di tutti i dati

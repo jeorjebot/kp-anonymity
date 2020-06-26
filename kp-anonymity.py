@@ -208,8 +208,8 @@ def main_naive(k_value=None, p_value=None, paa_value=None, dataset_path=None):
         for column in columns:
             attributes_maximum_value.append(time_series[column].max())
             attributes_minimum_value.append(time_series[column].min())
-        time_series_dict = dict()
 
+        time_series_dict = dict()
         # save dict file instead pandas
         for index, row in time_series.iterrows():
             time_series_dict[row["Product_Code"]] = list(row["W0":"W51"])
@@ -225,7 +225,7 @@ def main_naive(k_value=None, p_value=None, paa_value=None, dataset_path=None):
 
         # start kp anonymity
         # print(list(time_series_k_anonymized[0].values())) 
-        
+
         dataset_anonymized = DatasetAnonymized()
         for group in time_series_k_anonymized:
             # append group to anonymized_data (after we will create a complete dataset anonymized)
@@ -279,11 +279,21 @@ def main_kapra(k_value=None, p_value=None, paa_value=None, dataset_path=None):
         for column in columns:
             attributes_maximum_value.append(time_series[column].max())
             attributes_minimum_value.append(time_series[column].min())
+        
         time_series_dict = dict()
-
         # save dict file instead pandas
         for index, row in time_series.iterrows():
             time_series_dict[row["Product_Code"]] = list(row["W0":"W51"])
+
+        #NOTE fino a qua lo tengo uguale: ho i min e max per ogni attributo, e il time_series_dict
+
+        # create-tree phase
+        """
+        In questa fase mettiamo nel nodo radice l'intero dataset T, e lo splittiamo.
+        Viene eliminata la fase di postprocessing: tutte le good-leaf sono salvate in una leaf-list,
+        mentre le bad-leaf passano alla recycle bad-leaves phase.
+
+        """
 
         # start k_anonymity_top_down
         time_series_k_anonymized = list()

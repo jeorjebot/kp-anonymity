@@ -138,7 +138,7 @@ class Node:
                     for key, value in tb_node.items():
                         child_merge_node_group[key] = value #NOTE sposta tutto in childmerge
                 node_merge = Node(level=self.level, pattern_representation=self.pattern_representation,
-                                  label="good-leaf", group=child_merge_node_group, parent=self) #NOTE lo inizializzano con tt i parametri
+                                  label="good-leaf", group=child_merge_node_group, parent=self, paa_value=self.paa_value) #NOTE lo inizializzano con tt i parametri
                 self.child_node.append(node_merge) #NOTE viene aggiunto alla struttura
                 good_leaf_nodes.append(node_merge)
 
@@ -147,13 +147,13 @@ class Node:
                 if nc >= 2:
                     for index in range(0, len(tg_nodes)): #NOTE aggiunge i tg node ai child e continua lo splitting
                         node = Node(level=self.level, pattern_representation=pattern_representation_tg[index],
-                                    label="intermediate", group=tg_nodes[index], parent=self)
+                                    label="intermediate", group=tg_nodes[index], parent=self, paa_value=self.paa_value)
                         self.child_node.append(node)
                         node.start_splitting(p_value, max_level, good_leaf_nodes, bad_leaf_nodes)
                 else:
                     for index in range(0, len(tg_nodes)): #NOTE aggiunge i tg ma non fa splitting
                         node = Node(level=self.level, pattern_representation=pattern_representation_tg[index],
-                                    label="good-leaf", group=tg_nodes[index], parent=self)
+                                    label="good-leaf", group=tg_nodes[index], parent=self, paa_value=self.paa_value)
                         self.child_node.append(node)
                         good_leaf_nodes.append(node)
 
@@ -162,19 +162,19 @@ class Node:
                 logger.info("Label all tb_node {0} as bad-leaf and split only tg_nodes {1}".format(len(tb_nodes),len(tg_nodes)))
                 for index in range(0, len(tb_nodes)):
                     node = Node(level=self.level, pattern_representation=pattern_representation_tb[index], label="bad-leaf",
-                                group=tb_nodes[index], parent=self)
+                                group=tb_nodes[index], parent=self, paa_value=self.paa_value)
                     self.child_node.append(node)
                     bad_leaf_nodes.append(node)
                 if nc >= 2:
                     for index in range(0, len(tg_nodes)):
                         node = Node(level=self.level, pattern_representation=pattern_representation_tg[index],
-                                    label="intermediate", group=tg_nodes[index], parent=self)
+                                    label="intermediate", group=tg_nodes[index], parent=self, paa_value=self.paa_value)
                         self.child_node.append(node)
                         node.start_splitting(p_value, max_level, good_leaf_nodes, bad_leaf_nodes)
                 else:
                     for index in range(0, len(tg_nodes)):
                         node = Node(level=self.level, pattern_representation=pattern_representation_tg[index],
-                                    label="good-leaf", group=tg_nodes[index], parent=self)
+                                    label="good-leaf", group=tg_nodes[index], parent=self, paa_value=self.paa_value)
                         self.child_node.append(node)
                         good_leaf_nodes.append(node)
 
