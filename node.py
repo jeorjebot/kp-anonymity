@@ -92,6 +92,7 @@ class Node:
         else: # NOTE se ho avuto almeno un tentativo > p_value, faccio lo split
             logger.info("N can be split")
             logger.info("Compute tentative good nodes and tentative bad nodes")
+            
             # tentative good nodes
             # index of nodes in tentative_child_node with more p_value
             pr_keys = list(tentative_child_node.keys()) #NOTE sono le chiavi dei child node.. ma sono dei pattern!! "aaaabb" etc etc
@@ -245,3 +246,52 @@ class Node:
         else:
             logger.info("Can't split again, max level already reached") #NOTE: max level reached
 
+    @staticmethod
+    def recycle_bad_leaves(p_value, good_leaf_nodes, bad_leaf_nodes, paa_value):
+        """
+        Recycle bad-leaves phase
+        :param bad_leaf_nodes: [description]
+        """
+
+        # da cancellare
+        basic_node_1 = Node(label="bad-leaf", group=bad_leaf_nodes[0].group, paa_value=paa_value)
+        basic_node_1.level +=3
+        basic_node_2 = Node(label="bad-leaf", group=bad_leaf_nodes[0].group, paa_value=paa_value)
+        basic_node_2.level +=2
+        bad_leaf_nodes.append(basic_node_1)
+        bad_leaf_nodes.append(basic_node_2)
+
+        # TODO implementare un quicksort per sortare le bad-leaves
+        list_size = len(bad_leaf_nodes) 
+        Node.quickSort(bad_leaf_nodes, 0, list_size-1)
+        
+        # TODO inizializzare parametro max-bad-level        
+        max_bad_level = bad_leaf_nodes[-1].level
+        print("hello")
+
+
+        # TODO implementare il ciclo
+        # TODO aggiungere le nuove good-leaf alla lista good-leaf
+        # TODO sopprimere le altre
+
+
+
+
+    #NOTE Quicksort preso da https://www.geeksforgeeks.org/python-program-for-quicksort/
+    @staticmethod
+    def partition(arr, low, high): 
+        i = (low-1)         # index of smaller element 
+        pivot = arr[high]     # pivot 
+        for j in range(low, high): 
+            if arr[j].level <= pivot.level: 
+                i = i+1 
+                arr[i], arr[j] = arr[j], arr[i] 
+        arr[i+1], arr[high] = arr[high], arr[i+1] 
+        return (i+1)
+
+    @staticmethod
+    def quickSort(arr, low, high): 
+        if low < high: 
+            pi = Node.partition(arr,low,high) 
+            Node.quickSort(arr, low, pi-1) 
+            Node.quickSort(arr, pi+1, high) 

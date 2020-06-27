@@ -8,7 +8,7 @@ from node import Node
 from pathlib import Path
 from dataset_anonymized import DatasetAnonymized
 
-max_level = 4
+max_level = 5 #4
 output_path = "Dataset/output.csv"
 
 def clean_data(dataset_path_to_clean):
@@ -201,7 +201,8 @@ def main_naive(k_value=None, p_value=None, paa_value=None, dataset_path=None):
 
         # get columns name
         columns = list(time_series.columns)
-        columns.pop(0)  # remove product code
+        time_series_index = columns.pop(0)  # remove product code
+
         # save all maximum value for each attribute
         attributes_maximum_value = list()
         attributes_minimum_value = list()
@@ -210,9 +211,14 @@ def main_naive(k_value=None, p_value=None, paa_value=None, dataset_path=None):
             attributes_minimum_value.append(time_series[column].min())
 
         time_series_dict = dict()
+        
+        # save dict file instead pandas
+        #for index, row in time_series.iterrows():
+        #    time_series_dict[row["Product_Code"]] = list(row["W0":"W51"])
+
         # save dict file instead pandas
         for index, row in time_series.iterrows():
-            time_series_dict[row["Product_Code"]] = list(row["W0":"W51"])
+            time_series_dict[row[time_series_index]] = list(row[columns])
 
         # start k_anonymity_top_down
         time_series_k_anonymized = list()
@@ -294,6 +300,18 @@ def main_kapra(k_value=None, p_value=None, paa_value=None, dataset_path=None):
         mentre le bad-leaf passano alla recycle bad-leaves phase.
 
         """
+        good_leaf_nodes = list()
+        bad_leaf_nodes = list()
+
+        # creation root and start splitting node
+        logger.info("Start Splitting Dataset")
+        node = Node(level=1, group=time_series_dict, paa_value=paa_value)
+        node.start_splitting(p_value, max_level, good_leaf_nodes, bad_leaf_nodes) # NOTE il nodo inizia la split node
+        logger.info("Finish Splitting Dataset")
+
+        # recycle bad-leaves phase
+        if(len(bad_leaf_nodes) > 0):
+            Node.recycle_bad_leaves(p_value, good_leaf_nodes, bad_leaf_nodes, paa_value)
 
         # start k_anonymity_top_down
         time_series_k_anonymized = list()
