@@ -53,6 +53,26 @@ def compute_normalized_certainty_penalty_on_ai(table=None, maximum_value=None, m
     ncp_T = len(table)*ncp_t 
     return ncp_T
 
+def find_tuple_with_maximum_vl(fixed_tuple, time_series, key_fixed_tuple):
+    """
+    By scanning all tuples once, we can find tuple t1 that maximizes NCP(fixed_tuple, t1)
+    :param fixed_tuple:
+    :param time_series:
+    :param key_fixed_tuple:
+    :return:
+    
+    max_value = 0
+    tuple_with_max_ncp = None
+    for key, value in time_series.items():
+        if key != key_fixed_tuple:
+            ncp = compute_normalized_certainty_penalty_on_ai([fixed_tuple, time_series[key]], maximum_value, minimum_value)
+            if ncp >= max_value:
+                tuple_with_max_ncp = key
+                max_value = ncp
+    logger.info("Max ncp found: {} with tuple {} ".format(max_value, tuple_with_max_ncp))           
+    return tuple_with_max_ncp"""
+    pass
+
 
 def find_tuple_with_maximum_ncp(fixed_tuple, time_series, key_fixed_tuple, maximum_value, minimum_value):
     """
@@ -74,7 +94,7 @@ def find_tuple_with_maximum_ncp(fixed_tuple, time_series, key_fixed_tuple, maxim
     return tuple_with_max_ncp
 
 
-def top_down_greedy_clustering(time_series=None, partition_size=None, maximum_value=None,
+def top_down_greedy_clustering(algorithm="naive", time_series=None, partition_size=None, maximum_value=None,
                                   minimum_value=None, time_series_clustered=None):
     """
     k-anonymity based on work of Xu et al. 2006,
@@ -107,17 +127,25 @@ def top_down_greedy_clustering(time_series=None, partition_size=None, maximum_va
         last_row = random_tuple
         for round in range(0, rounds*2 - 1): 
             if len(time_series) > 0:
-                if round % 2 == 0: 
-                    v = find_tuple_with_maximum_ncp(group_u[last_row], time_series, last_row, maximum_value, minimum_value)
-                    logger.info("{} round: Find tuple (v) that has max ncp {}".format(round +1,v))
+                if round % 2 == 0:
+                    if algorithm == "naive":
+                        v = find_tuple_with_maximum_ncp(group_u[last_row], time_series, last_row, maximum_value, minimum_value)
+                        logger.info("{} round: Find tuple (v) that has max ncp {}".format(round +1,v))
+                    if algorithm == "kapra":
+                        v = find_tuple_with_maximum_vl(group_u[last_row], time_series, last_row)
+                        logger.info("{} round: Find tuple (v) that has max vl {}".format(round +1,v))
 
                     group_v.clear()
                     group_v[v] = time_series[v]
                     last_row = v
                     #del time_series[v]
                 else:
-                    u = find_tuple_with_maximum_ncp(group_v[last_row], time_series, last_row, maximum_value, minimum_value)
-                    logger.info("{} round: Find tuple (u) that has max ncp {}".format(round+1, u))
+                    if algorithm == "naive":
+                        u = find_tuple_with_maximum_ncp(group_v[last_row], time_series, last_row, maximum_value, minimum_value)
+                        logger.info("{} round: Find tuple (u) that has max ncp {}".format(round+1, u))
+                    if algorithm == "kapra":
+                        u = find_tuple_with_maximum_vl(group_v[last_row], time_series, last_row)
+                        logger.info("{} round: Find tuple (u) that has max ncp {}".format(round+1, u))
                     
                     group_u.clear()
                     group_u[u] = time_series[u]
@@ -136,14 +164,19 @@ def top_down_greedy_clustering(time_series=None, partition_size=None, maximum_va
             group_u_values.append(row_temp)
             group_v_values.append(row_temp)
 
-            ncp_u = compute_normalized_certainty_penalty_on_ai(group_u_values, maximum_value, minimum_value)
-            ncp_v = compute_normalized_certainty_penalty_on_ai(group_v_values, maximum_value, minimum_value)
+            if algorithm == "naive":
+                ncp_u = compute_normalized_certainty_penalty_on_ai(group_u_values, maximum_value, minimum_value)
+                ncp_v = compute_normalized_certainty_penalty_on_ai(group_v_values, maximum_value, minimum_value)
 
-            if ncp_v < ncp_u:
-                group_v[key] = row_temp
-            else:
-                group_u[key] = row_temp
-            del time_series[key]
+                if ncp_v < ncp_u:
+                    group_v[key] = row_temp
+                else:
+                    group_u[key] = row_temp
+                del time_series[key]
+
+            if algorithm == "kapra":
+                #devo fare lo stesso di sopra 
+                pass
 
         logger.info("Group u: {}, Group v: {}".format(len(group_u), len(group_v)))
         if len(group_u) > partition_size:
@@ -166,23 +199,15 @@ def top_down_greedy_clustering(time_series=None, partition_size=None, maximum_va
             time_series_clustered.append(group_v)
 
 
-def get_list_min_and_max_from_table(table):
-    """
-    From a table get a list of maximum and minimum value of each attribut
-    :param table:
-    :return: list_of_minimum_value, list_of_maximum_value
-    """
+def get_list_min_and_max_from_table(dict_table): #input un dizionario, output la lista di max e min per ogni attributo (l'envelope)
+    attributes_maximum_value = list()
+    attributes_minimum_value = list()
 
-    attributes_maximum_value = table[0]
-    attributes_minimum_value = table[0]
-
-    for row in range(1, len(table)):
-        for index_attribute in range(0, len(table[row])):
-            if table[row][index_attribute] > attributes_maximum_value[index_attribute]:
-                attributes_maximum_value[index_attribute] = table[row][index_attribute]
-            if table[row][index_attribute] < attributes_minimum_value[index_attribute]:
-                attributes_minimum_value[index_attribute] = table[row][index_attribute]
-
+    time_series = pd.DataFrame.from_dict(dict_table, orient="index")
+    columns = list(time_series.columns)
+    for column in columns:
+        attributes_maximum_value.append(time_series[column].max())
+        attributes_minimum_value.append(time_series[column].min())
     return attributes_minimum_value, attributes_maximum_value
 
 
@@ -205,24 +230,21 @@ def main_naive(k_value=None, p_value=None, paa_value=None, dataset_path=None):
         columns = list(time_series.columns)
         time_series_index = columns.pop(0)  # remove product code
 
-        # save all maximum value for each attribute
-        attributes_maximum_value = list()
-        attributes_minimum_value = list()
-        for column in columns:
-            attributes_maximum_value.append(time_series[column].max())
-            attributes_minimum_value.append(time_series[column].min())
-
         time_series_dict = dict()
         
         # save dict file instead pandas
         for index, row in time_series.iterrows():
             time_series_dict[row[time_series_index]] = list(row[columns])
 
+        # save all maximum value for each attribute
+        attributes_minimum_value, attributes_maximum_value = get_list_min_and_max_from_table(time_series_dict)
+
+
         # start k_anonymity_top_down
         time_series_k_anonymized = list()
         time_series_dict_copy = time_series_dict.copy()
         logger.info("Start k-anonymity top down approach")
-        top_down_greedy_clustering(time_series=time_series_dict_copy, partition_size=k_value,
+        top_down_greedy_clustering(algorithm="naive", time_series=time_series_dict_copy, partition_size=k_value,
                                       maximum_value=attributes_maximum_value, minimum_value=attributes_minimum_value,
                                       time_series_clustered=time_series_k_anonymized)
         logger.info("End k-anonymity top down approach")
@@ -274,7 +296,7 @@ def main_kapra(k_value=None, p_value=None, paa_value=None, dataset_path=None):
 
         # get columns name
         columns = list(time_series.columns)
-        columns.pop(0)  # remove product code
+        time_series_index = columns.pop(0)  # remove product code
         
         # save all maximum value for each attribute
         attributes_maximum_value = list()
@@ -320,15 +342,16 @@ def main_kapra(k_value=None, p_value=None, paa_value=None, dataset_path=None):
 
         p_group_list_copy = p_group_list.copy()
 
-        for p_group in p_group_list_copy:
+        for index, p_group in enumerate(p_group_list_copy):
             if len(p_group) >= 2*p_value:
                 p_group_splitted = list()
-                p_group_to_split = p_group_list.pop(p_group)
+                p_group_to_split = p_group_list.pop(index)
+                #ma x e min da ricalcolare
 
                 # start top down greedy clustering
-                top_down_greedy_clustering(time_series=p_group_to_split, partition_size=p_value,
-                                      maximum_value=attributes_maximum_value, minimum_value=attributes_minimum_value,
-                                      time_series_clustered=time_series_k_anonymized)
+                # non serve max e min perchè non ci servono parametri globali sugli attributi come in naive
+                top_down_greedy_clustering(algorithm="kapra", time_series=p_group_to_split, partition_size=p_value, 
+                                      time_series_clustered=p_group_splitted)
 
 
         # start k_anonymity_top_down
