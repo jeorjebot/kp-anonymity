@@ -74,7 +74,7 @@ def find_tuple_with_maximum_ncp(fixed_tuple, time_series, key_fixed_tuple, maxim
     return tuple_with_max_ncp
 
 
-def top_down_greedy_clustering(time_series=None, partition_size=None, columns_list=None, maximum_value=None,
+def top_down_greedy_clustering(time_series=None, partition_size=None, maximum_value=None,
                                   minimum_value=None, time_series_clustered=None):
     """
     k-anonymity based on work of Xu et al. 2006,
@@ -149,7 +149,7 @@ def top_down_greedy_clustering(time_series=None, partition_size=None, columns_li
         if len(group_u) > partition_size:
             # recursive partition group_u
             # maximum_value, minimum_value = get_list_min_and_max_from_table(list(group_u.values()))
-            top_down_greedy_clustering(time_series=group_u, partition_size=partition_size, columns_list=columns_list,
+            top_down_greedy_clustering(time_series=group_u, partition_size=partition_size,
                                           maximum_value=maximum_value, minimum_value=minimum_value,
                                           time_series_clustered=time_series_clustered)
         else:
@@ -159,7 +159,7 @@ def top_down_greedy_clustering(time_series=None, partition_size=None, columns_li
             # recursive partition group_v
 
             # maximum_value, minimum_value = get_list_min_and_max_from_table(list(group_v.values()))
-            top_down_greedy_clustering(time_series=group_v, partition_size=partition_size, columns_list=columns_list,
+            top_down_greedy_clustering(time_series=group_v, partition_size=partition_size,
                                           maximum_value=maximum_value, minimum_value=minimum_value,
                                           time_series_clustered=time_series_clustered)
         else:
@@ -222,7 +222,7 @@ def main_naive(k_value=None, p_value=None, paa_value=None, dataset_path=None):
         time_series_k_anonymized = list()
         time_series_dict_copy = time_series_dict.copy()
         logger.info("Start k-anonymity top down approach")
-        top_down_greedy_clustering(time_series=time_series_dict_copy, partition_size=k_value, columns_list=columns,
+        top_down_greedy_clustering(time_series=time_series_dict_copy, partition_size=k_value,
                                       maximum_value=attributes_maximum_value, minimum_value=attributes_minimum_value,
                                       time_series_clustered=time_series_k_anonymized)
         logger.info("End k-anonymity top down approach")
@@ -320,16 +320,22 @@ def main_kapra(k_value=None, p_value=None, paa_value=None, dataset_path=None):
 
         p_group_list_copy = p_group_list.copy()
 
-        for p_group in p_group_list:
+        for p_group in p_group_list_copy:
             if len(p_group) >= 2*p_value:
-                pass
+                p_group_splitted = list()
+                p_group_to_split = p_group_list.pop(p_group)
+
+                # start top down greedy clustering
+                top_down_greedy_clustering(time_series=p_group_to_split, partition_size=p_value,
+                                      maximum_value=attributes_maximum_value, minimum_value=attributes_minimum_value,
+                                      time_series_clustered=time_series_k_anonymized)
 
 
         # start k_anonymity_top_down
         time_series_k_anonymized = list()
         time_series_dict_copy = time_series_dict.copy()
         logger.info("Start k-anonymity top down approach")
-        top_down_greedy_clustering(time_series=time_series_dict_copy, partition_size=k_value, columns_list=columns,
+        top_down_greedy_clustering(time_series=time_series_dict_copy, partition_size=k_value,
                                       maximum_value=attributes_maximum_value, minimum_value=attributes_minimum_value,
                                       time_series_clustered=time_series_k_anonymized)
         logger.info("End k-anonymity top down approach")
