@@ -8,8 +8,9 @@ from node import Node
 from pathlib import Path
 from dataset_anonymized import DatasetAnonymized
 
-max_level = 5 #4
+max_level = 5 #caputo: 4
 output_path = "Dataset/output.csv"
+
 
 def clean_data(dataset_path_to_clean):
     """
@@ -20,6 +21,37 @@ def clean_data(dataset_path_to_clean):
     time_series = pd.read_csv(dataset_path)
     time_series = time_series.loc[0:len(time_series), "Product_Code":"W51"]
     time_series.to_csv(dataset_path_to_clean.replace(".csv", "_Final.csv"), index=False)
+
+
+# TODO check if |Ai| should be calculate on original table or not
+def compute_normalized_certainty_penalty_on_ai(table=None, maximum_value=None, minimum_value=None):
+    """
+    Compute NCP(T)
+    :param table:
+    :return:
+    """
+    z_1 = list()
+    y_1 = list()
+    a = list()
+    for index_attribute in range(0, len(table[0])): 
+        temp_z1 = 0
+        temp_y1 = float('inf') 
+        for row in table: 
+            if row[index_attribute] > temp_z1:
+                temp_z1 = row[index_attribute]
+            if row[index_attribute] < temp_y1:
+                temp_y1 = row[index_attribute]
+        z_1.append(temp_z1) 
+        y_1.append(temp_y1) 
+        a.append(abs(maximum_value[index_attribute] - minimum_value[index_attribute]))
+    ncp_t = 0
+    for index in range(0, len(z_1)):
+        try:
+            ncp_t += (z_1[index] - y_1[index]) / a[index]
+        except ZeroDivisionError:
+            ncp_t += 0
+    ncp_T = len(table)*ncp_t 
+    return ncp_T
 
 
 def find_tuple_with_maximum_ncp(fixed_tuple, time_series, key_fixed_tuple, maximum_value, minimum_value):
@@ -134,37 +166,6 @@ def k_anonymity_top_down_approach(time_series=None, k_value=None, columns_list=N
             time_series_k_anonymized.append(group_v)
 
 
-# TODO check if |Ai| should be calculate on original table or not
-def compute_normalized_certainty_penalty_on_ai(table=None, maximum_value=None, minimum_value=None):
-    """
-    Compute NCP(T)
-    :param table:
-    :return:
-    """
-    z_1 = list()
-    y_1 = list()
-    a = list()
-    for index_attribute in range(0, len(table[0])): 
-        temp_z1 = 0
-        temp_y1 = float('inf') 
-        for row in table: 
-            if row[index_attribute] > temp_z1:
-                temp_z1 = row[index_attribute]
-            if row[index_attribute] < temp_y1:
-                temp_y1 = row[index_attribute]
-        z_1.append(temp_z1) 
-        y_1.append(temp_y1) 
-        a.append(abs(maximum_value[index_attribute] - minimum_value[index_attribute]))
-    ncp_t = 0
-    for index in range(0, len(z_1)):
-        try:
-            ncp_t += (z_1[index] - y_1[index]) / a[index]
-        except ZeroDivisionError:
-            ncp_t += 0
-    ncp_T = len(table)*ncp_t 
-    return ncp_T
-
-
 def get_list_min_and_max_from_table(table):
     """
     From a table get a list of maximum and minimum value of each attribut
@@ -183,6 +184,7 @@ def get_list_min_and_max_from_table(table):
                 attributes_minimum_value[index_attribute] = table[row][index_attribute]
 
     return attributes_minimum_value, attributes_maximum_value
+
 
 def main_naive(k_value=None, p_value=None, paa_value=None, dataset_path=None):
     """
