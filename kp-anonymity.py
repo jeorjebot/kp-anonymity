@@ -52,7 +52,7 @@ def k_anonymity_top_down_approach(time_series=None, k_value=None, columns_list=N
     :return:
     """
     # len(time_series) < 2*k_value
-    if len(time_series) < 2*k_value:
+    if len(time_series) <= k_value:
         logger.info("End Recursion")
         time_series_k_anonymized.append(time_series)
         return
@@ -213,10 +213,6 @@ def main_naive(k_value=None, p_value=None, paa_value=None, dataset_path=None):
         time_series_dict = dict()
         
         # save dict file instead pandas
-        #for index, row in time_series.iterrows():
-        #    time_series_dict[row["Product_Code"]] = list(row["W0":"W51"])
-
-        # save dict file instead pandas
         for index, row in time_series.iterrows():
             time_series_dict[row[time_series_index]] = list(row[columns])
 
@@ -230,8 +226,6 @@ def main_naive(k_value=None, p_value=None, paa_value=None, dataset_path=None):
         logger.info("End k-anonymity top down approach")
 
         # start kp anonymity
-        # print(list(time_series_k_anonymized[0].values())) 
-
         dataset_anonymized = DatasetAnonymized()
         for group in time_series_k_anonymized:
             # append group to anonymized_data (after we will create a complete dataset anonymized)
@@ -279,6 +273,7 @@ def main_kapra(k_value=None, p_value=None, paa_value=None, dataset_path=None):
         # get columns name
         columns = list(time_series.columns)
         columns.pop(0)  # remove product code
+        
         # save all maximum value for each attribute
         attributes_maximum_value = list()
         attributes_minimum_value = list()
@@ -289,7 +284,7 @@ def main_kapra(k_value=None, p_value=None, paa_value=None, dataset_path=None):
         time_series_dict = dict()
         # save dict file instead pandas
         for index, row in time_series.iterrows():
-            time_series_dict[row["Product_Code"]] = list(row["W0":"W51"])
+            time_series_dict[row[time_series_index]] = list(row[columns])
 
         #NOTE fino a qua lo tengo uguale: ho i min e max per ogni attributo, e il time_series_dict
 
@@ -298,7 +293,6 @@ def main_kapra(k_value=None, p_value=None, paa_value=None, dataset_path=None):
         In questa fase mettiamo nel nodo radice l'intero dataset T, e lo splittiamo.
         Viene eliminata la fase di postprocessing: tutte le good-leaf sono salvate in una leaf-list,
         mentre le bad-leaf passano alla recycle bad-leaves phase.
-
         """
         good_leaf_nodes = list()
         bad_leaf_nodes = list()
@@ -313,6 +307,21 @@ def main_kapra(k_value=None, p_value=None, paa_value=None, dataset_path=None):
         suppressed_nodes = list()
         if(len(bad_leaf_nodes) > 0):
             Node.recycle_bad_leaves(p_value, good_leaf_nodes, bad_leaf_nodes, suppressed_nodes, paa_value)
+
+
+        # TODO group formation phase
+
+        # preprocessing
+        p_group_list = list() # è una lista di dizionari
+        for node in good_leaf_nodes:
+            p_group_list.append(node.group)
+
+        p_group_list_copy = p_group_list.copy()
+
+        for p_group in p_group_list:
+            if len(p_group) >= 2*p_value:
+                pass
+
 
         # start k_anonymity_top_down
         time_series_k_anonymized = list()
