@@ -247,34 +247,106 @@ class Node:
             logger.info("Can't split again, max level already reached") #NOTE: max level reached
 
     @staticmethod
-    def recycle_bad_leaves(p_value, good_leaf_nodes, bad_leaf_nodes, paa_value):
+    def recycle_bad_leaves(p_value, good_leaf_nodes, bad_leaf_nodes, suppressed_nodes, paa_value):
         """
         Recycle bad-leaves phase
         :param bad_leaf_nodes: [description]
         """
-
         # da cancellare
-        basic_node_1 = Node(label="bad-leaf", group=bad_leaf_nodes[0].group, paa_value=paa_value)
-        basic_node_1.level +=3
-        basic_node_2 = Node(label="bad-leaf", group=bad_leaf_nodes[0].group, paa_value=paa_value)
+        basic_node_1 = Node(label="bad-leaf", group=good_leaf_nodes[1].group, paa_value=paa_value)
+        basic_node_1.level +=2
+        basic_node_2 = Node(label="bad-leaf", group=good_leaf_nodes[0].group, paa_value=paa_value)
         basic_node_2.level +=2
+        basic_node_3 = Node(label="bad-leaf", group=good_leaf_nodes[2].group, paa_value=paa_value, pattern_representation="aaaab")
+        basic_node_3.level = 1
         bad_leaf_nodes.append(basic_node_1)
         bad_leaf_nodes.append(basic_node_2)
+        bad_leaf_nodes.append(basic_node_3)
 
-        # TODO implementare un quicksort per sortare le bad-leaves
-        list_size = len(bad_leaf_nodes) 
-        Node.quickSort(bad_leaf_nodes, 0, list_size-1)
+        bad_leaf_nodes_size = sum([node.size for node in bad_leaf_nodes])
+        if bad_leaf_nodes_size >= p_value: #NOTE fai la recycle solo se ci sono più di p elementi, altrimenti sopprimi
         
-        # TODO inizializzare parametro max-bad-level        
-        max_bad_level = bad_leaf_nodes[-1].level
-        print("hello")
+            bad_leaf_nodes_dict = dict()
+            for node in bad_leaf_nodes:
+                if node.level in bad_leaf_nodes_dict.keys():
+                    bad_leaf_nodes_dict[node.level].append(node)
+                else:
+                    bad_leaf_nodes_dict[node.level] = [node]
 
+            max_bad_level = max(bad_leaf_nodes_dict.keys())
+            current_level = max_bad_level
 
-        # TODO implementare il ciclo
-        # TODO aggiungere le nuove good-leaf alla lista good-leaf
+            while bad_leaf_nodes_size >= p_value:
+                
+                if current_level in bad_leaf_nodes_dict.keys():
+                    merge_dict = dict()
+                    keys_to_be_removed = list()
+                    merge = False
+                    for current_level_node in bad_leaf_nodes_dict[current_level]:
+                        pr_node = current_level_node.pattern_representation
+                        if pr_node in merge_dict.keys():
+                            merge = True
+                            merge_dict[pr_node].append(current_level_node)
+                            if pr_node in keys_to_be_removed:
+                                keys_to_be_removed.remove(pr_node) #tolgo questo pr perchè un altro nodo con stesso pr è stato aggiunto, e quindi è un pr da tenere per il merge
+                        else:
+                            merge_dict[pr_node] = [current_level_node]
+                            keys_to_be_removed.append(pr_node) #se non interviene un altro nodo sopra a toglierlo, alla fine verrà rimosso
+                    
+                    if merge:
+                        for k in keys_to_be_removed: #pulizia delle keys che non devono essere mergiate
+                            del merge_dict[k]
+
+                        for pr, node_list in merge_dict.items():
+                            group = dict()
+                            for node in node_list:
+                                bad_leaf_nodes_dict[current_level].remove(node) #elimino questi nodi dal dict
+                                group.update(node.group) #concateno il gruppo
+                            if current_level > 1:
+                                level = current_level
+                            else:
+                                level = 1
+                            leaf_merge = Node(level=level, pattern_representation=pr,
+                                group=group, paa_value=paa_value)
+
+                            # qua la metto bad o good. se good la sposto nelle good, se bad, la sposto nel bad-lead-dict
+                            if leaf_merge.size >= p_value:
+                                leaf_merge.label = "good-leaf"
+                                good_leaf_nodes.append(leaf_merge)
+                                bad_leaf_nodes_size -= leaf_merge.size #NOTE devo aggiornarla!!!
+                            else: 
+                                leaf_merge.label = "bad-leaf"
+                                bad_leaf_nodes_dict[current_level].append(leaf_merge)
+
+                
+                temp_level = current_level-1
+                for node in bad_leaf_nodes_dict[current_level]:
+                    if temp_level > 1:
+                        values_group = list(node.group.values())
+                        data = np.array(values_group[0])
+                        data_znorm = znorm(data)
+                        data_paa = paa(data_znorm, paa_value)
+                        pr = ts_to_string(data_paa, cuts_for_asize(temp_level)) #NOTE prende il primo elemento e fa il pr con level+1, sarà il campione con cui confrontare gli altri
+                    else:
+                        pr = "a"*paa_value
+                    node.level = temp_level
+                    node.pattern_representation = pr
+
+                if current_level > 0:
+                    if temp_level not in bad_leaf_nodes_dict.keys(): # se la lista di nodi esiste già, concatenas
+                        bad_leaf_nodes_dict[temp_level] = bad_leaf_nodes_dict.pop(current_level) #aggiorna il dizionario
+                    else:
+                        bad_leaf_nodes_dict[temp_level] = bad_leaf_nodes_dict[temp_level] + bad_leaf_nodes_dict.pop(current_level)
+                    #del bad_leaf_nodes_dict[current_level] 
+ 
+                    current_level -= 1
+                else:
+                    break 
+
         # TODO sopprimere le altre
-
-
+        print("sopprimo le serie rimanenti")
+        for time_series in bad_leaf_nodes_dict.values():
+            suppressed_nodes = suppressed_nodes + time_series
 
 
     #NOTE Quicksort preso da https://www.geeksforgeeks.org/python-program-for-quicksort/

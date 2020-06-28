@@ -310,8 +310,9 @@ def main_kapra(k_value=None, p_value=None, paa_value=None, dataset_path=None):
         logger.info("Finish Splitting Dataset")
 
         # recycle bad-leaves phase
+        suppressed_nodes = list()
         if(len(bad_leaf_nodes) > 0):
-            Node.recycle_bad_leaves(p_value, good_leaf_nodes, bad_leaf_nodes, paa_value)
+            Node.recycle_bad_leaves(p_value, good_leaf_nodes, bad_leaf_nodes, suppressed_nodes, paa_value)
 
         # start k_anonymity_top_down
         time_series_k_anonymized = list()
