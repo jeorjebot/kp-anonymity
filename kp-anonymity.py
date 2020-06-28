@@ -74,8 +74,8 @@ def find_tuple_with_maximum_ncp(fixed_tuple, time_series, key_fixed_tuple, maxim
     return tuple_with_max_ncp
 
 
-def k_anonymity_top_down_approach(time_series=None, k_value=None, columns_list=None, maximum_value=None,
-                                  minimum_value=None, time_series_k_anonymized=None):
+def top_down_greedy_clustering(time_series=None, partition_size=None, columns_list=None, maximum_value=None,
+                                  minimum_value=None, time_series_clustered=None):
     """
     k-anonymity based on work of Xu et al. 2006,
     Utility-Based Anonymization for Privacy Preservation with Less Information Loss
@@ -84,9 +84,9 @@ def k_anonymity_top_down_approach(time_series=None, k_value=None, columns_list=N
     :return:
     """
     # len(time_series) < 2*k_value
-    if len(time_series) <= k_value:
+    if len(time_series) <= partition_size:
         logger.info("End Recursion")
-        time_series_k_anonymized.append(time_series)
+        time_series_clustered.append(time_series)
         return
     else:
         # TODO compute max and minumum_value for each recursive methods
@@ -146,24 +146,24 @@ def k_anonymity_top_down_approach(time_series=None, k_value=None, columns_list=N
             del time_series[key]
 
         logger.info("Group u: {}, Group v: {}".format(len(group_u), len(group_v)))
-        if len(group_u) > k_value:
+        if len(group_u) > partition_size:
             # recursive partition group_u
             # maximum_value, minimum_value = get_list_min_and_max_from_table(list(group_u.values()))
-            k_anonymity_top_down_approach(time_series=group_u, k_value=k_value, columns_list=columns_list,
+            top_down_greedy_clustering(time_series=group_u, partition_size=partition_size, columns_list=columns_list,
                                           maximum_value=maximum_value, minimum_value=minimum_value,
-                                          time_series_k_anonymized=time_series_k_anonymized)
+                                          time_series_clustered=time_series_clustered)
         else:
-            time_series_k_anonymized.append(group_u)
+            time_series_clustered.append(group_u)
 
-        if len(group_v) > k_value:
+        if len(group_v) > partition_size:
             # recursive partition group_v
 
             # maximum_value, minimum_value = get_list_min_and_max_from_table(list(group_v.values()))
-            k_anonymity_top_down_approach(time_series=group_v, k_value=k_value, columns_list=columns_list,
+            top_down_greedy_clustering(time_series=group_v, partition_size=partition_size, columns_list=columns_list,
                                           maximum_value=maximum_value, minimum_value=minimum_value,
-                                          time_series_k_anonymized=time_series_k_anonymized)
+                                          time_series_clustered=time_series_clustered)
         else:
-            time_series_k_anonymized.append(group_v)
+            time_series_clustered.append(group_v)
 
 
 def get_list_min_and_max_from_table(table):
@@ -222,9 +222,9 @@ def main_naive(k_value=None, p_value=None, paa_value=None, dataset_path=None):
         time_series_k_anonymized = list()
         time_series_dict_copy = time_series_dict.copy()
         logger.info("Start k-anonymity top down approach")
-        k_anonymity_top_down_approach(time_series=time_series_dict_copy, k_value=k_value, columns_list=columns,
+        top_down_greedy_clustering(time_series=time_series_dict_copy, partition_size=k_value, columns_list=columns,
                                       maximum_value=attributes_maximum_value, minimum_value=attributes_minimum_value,
-                                      time_series_k_anonymized=time_series_k_anonymized)
+                                      time_series_clustered=time_series_k_anonymized)
         logger.info("End k-anonymity top down approach")
 
         # start kp anonymity
@@ -329,9 +329,9 @@ def main_kapra(k_value=None, p_value=None, paa_value=None, dataset_path=None):
         time_series_k_anonymized = list()
         time_series_dict_copy = time_series_dict.copy()
         logger.info("Start k-anonymity top down approach")
-        k_anonymity_top_down_approach(time_series=time_series_dict_copy, k_value=k_value, columns_list=columns,
+        top_down_greedy_clustering(time_series=time_series_dict_copy, partition_size=k_value, columns_list=columns,
                                       maximum_value=attributes_maximum_value, minimum_value=attributes_minimum_value,
-                                      time_series_k_anonymized=time_series_k_anonymized)
+                                      time_series_clustered=time_series_k_anonymized)
         logger.info("End k-anonymity top down approach")
 
         # start kp anonymity
