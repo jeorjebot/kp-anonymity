@@ -252,6 +252,8 @@ class Node:
         Recycle bad-leaves phase
         :param bad_leaf_nodes: [description]
         """
+        
+        """
         # da cancellare
         basic_node_1 = Node(label="bad-leaf", group=good_leaf_nodes[1].group, paa_value=paa_value)
         basic_node_1.level +=2
@@ -262,19 +264,22 @@ class Node:
         bad_leaf_nodes.append(basic_node_1)
         bad_leaf_nodes.append(basic_node_2)
         bad_leaf_nodes.append(basic_node_3)
+        """
+        
+        bad_leaf_nodes_dict = dict()
+        for node in bad_leaf_nodes:
+            if node.level in bad_leaf_nodes_dict.keys():
+                bad_leaf_nodes_dict[node.level].append(node)
+            else:
+                bad_leaf_nodes_dict[node.level] = [node]
 
         bad_leaf_nodes_size = sum([node.size for node in bad_leaf_nodes])
+        
         if bad_leaf_nodes_size >= p_value: #NOTE fai la recycle solo se ci sono più di p elementi, altrimenti sopprimi
         
-            bad_leaf_nodes_dict = dict()
-            for node in bad_leaf_nodes:
-                if node.level in bad_leaf_nodes_dict.keys():
-                    bad_leaf_nodes_dict[node.level].append(node)
-                else:
-                    bad_leaf_nodes_dict[node.level] = [node]
 
-            max_bad_level = max(bad_leaf_nodes_dict.keys())
-            current_level = max_bad_level
+            # max bad level
+            current_level = max(bad_leaf_nodes_dict.keys())
 
             while bad_leaf_nodes_size >= p_value:
                 
