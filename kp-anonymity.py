@@ -33,7 +33,9 @@ def compute_normalized_certainty_penalty_on_ai(table=None, maximum_value=None, m
     z_1 = list()
     y_1 = list()
     a = list()
-    for index_attribute in range(0, len(table[0])): 
+    n = len(table[0])
+
+    for index_attribute in range(0, n): 
         temp_z1 = 0
         temp_y1 = float('inf') 
         for row in table: 
@@ -45,13 +47,37 @@ def compute_normalized_certainty_penalty_on_ai(table=None, maximum_value=None, m
         y_1.append(temp_y1) 
         a.append(abs(maximum_value[index_attribute] - minimum_value[index_attribute]))
     ncp_t = 0
-    for index in range(0, len(z_1)):
+    for index in range(0, n):
         try:
             ncp_t += (z_1[index] - y_1[index]) / a[index]
         except ZeroDivisionError:
             ncp_t += 0
     ncp_T = len(table)*ncp_t 
     return ncp_T
+
+def compute_instant_value_loss(table): #table è una lista di liste, con dentro le time series
+    r_plus = list()
+    r_minus = list()
+    n = len(table[0])
+
+    for index_attribute in range(0, n): # NOTE da 0 a 51, per ogni attributo
+        # NOTE vengono reinizializzati ogni iterazione
+        temp_r_plus = 0
+        temp_r_minus = float('inf') # NOTE : infinito
+        for row in table:
+            if row[index_attribute] > temp_r_plus:
+                temp_r_plus = row[index_attribute]
+            if row[index_attribute] < temp_r_minus:
+                temp_r_minus = row[index_attribute]
+        r_plus.append(temp_r_plus) # NOTE appendo il maggior z1 tra i due
+        r_minus.append(temp_r_minus) # NOTE appendo il minor y1 tra i due
+    
+    vl_t = 0
+    for index in range(0, n):
+        vl_t += pow((r_plus[index] - r_minus[index]), 2) / n
+    vl_t = np.sqrt(vl_t)
+    vl_T = len(table)*vl_t
+    return vl_T
 
 def find_tuple_with_maximum_vl(fixed_tuple, time_series, key_fixed_tuple):
     """
@@ -60,18 +86,18 @@ def find_tuple_with_maximum_vl(fixed_tuple, time_series, key_fixed_tuple):
     :param time_series:
     :param key_fixed_tuple:
     :return:
-    
+    """
     max_value = 0
-    tuple_with_max_ncp = None
+    tuple_with_max_vl = None
     for key, value in time_series.items():
         if key != key_fixed_tuple:
-            ncp = compute_normalized_certainty_penalty_on_ai([fixed_tuple, time_series[key]], maximum_value, minimum_value)
-            if ncp >= max_value:
-                tuple_with_max_ncp = key
-                max_value = ncp
-    logger.info("Max ncp found: {} with tuple {} ".format(max_value, tuple_with_max_ncp))           
-    return tuple_with_max_ncp"""
-    pass
+            vl = compute_instant_value_loss([fixed_tuple, time_series[key]]) #NOTE sono sempre due le tuple da confrontare.. sono quelle che danno origine alla partizione
+            if vl >= max_value:
+                tuple_with_max_vl = key
+                max_value = vl
+    logger.info("Max vl found: {} with tuple {} ".format(max_value, tuple_with_max_vl))           
+    return tuple_with_max_vl
+    
 
 
 def find_tuple_with_maximum_ncp(fixed_tuple, time_series, key_fixed_tuple, maximum_value, minimum_value):
@@ -122,11 +148,11 @@ def top_down_greedy_clustering(algorithm="naive", time_series=None, partition_si
         logger.info("Get random tuple (u1) {}".format(random_tuple))
         group_u = dict()
         group_v = dict()
-        group_u[random_tuple] = time_series[random_tuple] 
+        group_u[random_tuple] = time_series[random_tuple] # NOTE assegna al dizionario u, la key e relativi valori: "P13" : [...]
         #del time_series[random_tuple]
         last_row = random_tuple
         for round in range(0, rounds*2 - 1): 
-            if len(time_series) > 0:
+            if len(time_series) > 0:#NOTE fanno una volta per uno
                 if round % 2 == 0:
                     if algorithm == "naive":
                         v = find_tuple_with_maximum_ncp(group_u[last_row], time_series, last_row, maximum_value, minimum_value)
@@ -145,7 +171,7 @@ def top_down_greedy_clustering(algorithm="naive", time_series=None, partition_si
                         logger.info("{} round: Find tuple (u) that has max ncp {}".format(round+1, u))
                     if algorithm == "kapra":
                         u = find_tuple_with_maximum_vl(group_v[last_row], time_series, last_row)
-                        logger.info("{} round: Find tuple (u) that has max ncp {}".format(round+1, u))
+                        logger.info("{} round: Find tuple (u) that has max vl {}".format(round+1, u))
                     
                     group_u.clear()
                     group_u[u] = time_series[u]
@@ -175,14 +201,21 @@ def top_down_greedy_clustering(algorithm="naive", time_series=None, partition_si
                 del time_series[key]
 
             if algorithm == "kapra":
-                #devo fare lo stesso di sopra 
-                pass
+                vl_u = compute_instant_value_loss(group_u_values)
+                vl_v = compute_instant_value_loss(group_v_values)
+
+                if vl_v < vl_u:
+                    group_v[key] = row_temp
+                else:
+                    group_u[key] = row_temp
+                del time_series[key]
+
 
         logger.info("Group u: {}, Group v: {}".format(len(group_u), len(group_v)))
         if len(group_u) > partition_size:
             # recursive partition group_u
             # maximum_value, minimum_value = get_list_min_and_max_from_table(list(group_u.values()))
-            top_down_greedy_clustering(time_series=group_u, partition_size=partition_size,
+            top_down_greedy_clustering(algorithm=algorithm, time_series=group_u, partition_size=partition_size,
                                           maximum_value=maximum_value, minimum_value=minimum_value,
                                           time_series_clustered=time_series_clustered)
         else:
@@ -192,7 +225,7 @@ def top_down_greedy_clustering(algorithm="naive", time_series=None, partition_si
             # recursive partition group_v
 
             # maximum_value, minimum_value = get_list_min_and_max_from_table(list(group_v.values()))
-            top_down_greedy_clustering(time_series=group_v, partition_size=partition_size,
+            top_down_greedy_clustering(algorithm=algorithm, time_series=group_v, partition_size=partition_size,
                                           maximum_value=maximum_value, minimum_value=minimum_value,
                                           time_series_clustered=time_series_clustered)
         else:
@@ -297,18 +330,16 @@ def main_kapra(k_value=None, p_value=None, paa_value=None, dataset_path=None):
         # get columns name
         columns = list(time_series.columns)
         time_series_index = columns.pop(0)  # remove product code
-        
-        # save all maximum value for each attribute
-        attributes_maximum_value = list()
-        attributes_minimum_value = list()
-        for column in columns:
-            attributes_maximum_value.append(time_series[column].max())
-            attributes_minimum_value.append(time_series[column].min())
-        
+
         time_series_dict = dict()
+        
         # save dict file instead pandas
         for index, row in time_series.iterrows():
             time_series_dict[row[time_series_index]] = list(row[columns])
+
+        #FIXME mi serve davvero calcolare max e min con kapra? secondo me no..
+        # save all maximum value for each attribute
+        attributes_minimum_value, attributes_maximum_value = get_list_min_and_max_from_table(time_series_dict)
 
         #NOTE fino a qua lo tengo uguale: ho i min e max per ogni attributo, e il time_series_dict
 
@@ -346,13 +377,13 @@ def main_kapra(k_value=None, p_value=None, paa_value=None, dataset_path=None):
             if len(p_group) >= 2*p_value:
                 p_group_splitted = list()
                 p_group_to_split = p_group_list.pop(index)
-                #ma x e min da ricalcolare
 
                 # start top down greedy clustering
                 # non serve max e min perchè non ci servono parametri globali sugli attributi come in naive
                 top_down_greedy_clustering(algorithm="kapra", time_series=p_group_to_split, partition_size=p_value, 
                                       time_series_clustered=p_group_splitted)
-
+                
+                p_group_list += p_group_splitted # non devo fare l'appende ma un merge, perchè p_splitted è una lista di dict
 
         # start k_anonymity_top_down
         time_series_k_anonymized = list()
