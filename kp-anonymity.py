@@ -120,8 +120,8 @@ def find_tuple_with_maximum_ncp(fixed_tuple, time_series, key_fixed_tuple, maxim
     return tuple_with_max_ncp
 
 
-def top_down_greedy_clustering(algorithm="naive", time_series=None, partition_size=None, maximum_value=None,
-                                  minimum_value=None, time_series_clustered=None):
+def top_down_greedy_clustering(algorithm=None, time_series=None, partition_size=None, maximum_value=None,
+                                  minimum_value=None, time_series_clustered=None, tree_structure=None, group_label="o"):
     """
     k-anonymity based on work of Xu et al. 2006,
     Utility-Based Anonymization for Privacy Preservation with Less Information Loss
@@ -130,9 +130,10 @@ def top_down_greedy_clustering(algorithm="naive", time_series=None, partition_si
     :return:
     """
     # len(time_series) < 2*k_value
-    if len(time_series) <= partition_size:
+    if len(time_series) < 2*partition_size:
         logger.info("End Recursion")
         time_series_clustered.append(time_series)
+        tree_structure.append(group_label)
         return
     else:
         # TODO compute max and minumum_value for each recursive methods
@@ -217,9 +218,11 @@ def top_down_greedy_clustering(algorithm="naive", time_series=None, partition_si
             # maximum_value, minimum_value = get_list_min_and_max_from_table(list(group_u.values()))
             top_down_greedy_clustering(algorithm=algorithm, time_series=group_u, partition_size=partition_size,
                                           maximum_value=maximum_value, minimum_value=minimum_value,
-                                          time_series_clustered=time_series_clustered)
+                                          time_series_clustered=time_series_clustered, tree_structure=tree_structure, 
+                                          group_label=group_label+"a") #NOTE tengo traccia della posizione del node in base alla codifica
         else:
             time_series_clustered.append(group_u)
+            tree_structure.append(group_label)
 
         if len(group_v) > partition_size:
             # recursive partition group_v
@@ -227,10 +230,89 @@ def top_down_greedy_clustering(algorithm="naive", time_series=None, partition_si
             # maximum_value, minimum_value = get_list_min_and_max_from_table(list(group_v.values()))
             top_down_greedy_clustering(algorithm=algorithm, time_series=group_v, partition_size=partition_size,
                                           maximum_value=maximum_value, minimum_value=minimum_value,
-                                          time_series_clustered=time_series_clustered)
+                                          time_series_clustered=time_series_clustered, tree_structure=tree_structure, 
+                                          group_label=group_label+"b")
         else:
             time_series_clustered.append(group_v)
+            tree_structure.append(group_label)
 
+        
+def top_down_greedy_clustering_postprocessing(algorithm="naive", time_series_clustered=None, tree_structure=None, 
+                                              partition_size=None, maximum_value=None, minimum_value=None):
+    
+    index_change = list()
+    group_change = list()
+    #time_series_clustered è una lista di dizionari
+    
+    for index_group_1, g_group_1 in enumerate(time_series_clustered):
+        g_size = len(g_group_1)
+        if g_size < partition_size: #NOTE allora è da processare, ha meno di k elementi
+
+            g_group_1_values = list(g_group_1.values())
+
+            group_label = tree_structure[index_group_1]
+            index_neighbour = -1
+            ncp_neighbour = float('inf') 
+            for index_label, label in enumerate(tree_structure): 
+                    if label[:-1] == group_label[:-1]: # stesso pattern a parte la lettera finale
+                        if index_label != index_group_1: # diverso da se stesso
+                         
+                            if index_label not in index_change: # se non è stato cambiato
+                                index_neighbour = index_label
+            
+            if index_neighbour > 0:
+                table_1 = g_group_1_values + list(time_series_clustered[index_neighbour].values())
+                ncp_neighbour = compute_normalized_certainty_penalty_on_ai(table=table_1, maximum_value=maximum_value, minimum_value=minimum_value)
+                group_merge_neighbour = dict()
+                group_merge_neighbour.update(g_group_1)
+                group_merge_neighbour.update(time_series_clustered[index_neighbour]) #questo è il gruppo, se npc_neighbour fosse > dell'altro
+
+
+            ncp_other_group = float('inf')   
+            #group_merge_other_group = dict()
+
+            for index_other_group, other_group in enumerate(time_series_clustered): #per ogni gruppo
+                if len(other_group) >= 2*partition_size - g_size: #2k - |G|   
+                    if index_other_group not in index_change:    
+                        g_group_2 = g_group_1.copy()
+                        for round in range(partition_size - g_size):#k-|G| volte
+                            
+                            round_ncp = float('inf')
+                            g_group_2_values = list(g_group_2.values())
+
+                            for key, time_series in other_group.items(): #aggiunge una ts alla volta
+                                
+                                if key not in g_group_2.keys(): # non permette di aggiungere ts già aggiunte
+                                    
+                                    temp_ncp = compute_normalized_certainty_penalty_on_ai(table=g_group_2_values + [time_series], 
+                                                                                        maximum_value=maximum_value, 
+                                                                                        minimum_value=minimum_value)
+                                    if temp_ncp < round_ncp:
+                                        round_ncp = temp_ncp #set new min
+                                        dict_to_add = { key : time_series }
+                            
+                            g_group_2.update(dict_to_add)
+
+                        if round_ncp < ncp_other_group: # è l'ultimo, quindi è ncp dell'intero gruppo "mergiato"
+                            ncp_other_group = round_ncp #aggiorno ncp other group
+                            group_merge_other_group = g_group_2
+                            group_merge_remain = {key: value for (key, value) in other_group.items() if key not in g_group_2.keys()} # dict complementare a quello sopra, aggiunge le cose rimaste
+                            print("he")
+
+            if ncp_neighbour < ncp_other_group: # aggiungi neighbour
+                index_change.append(index_neighbour)
+                group_change.append(group_merge_neighbour)
+            else:
+                index_change.append(index_other_group)
+                group_change.append(group_merge_other_group)
+                group_change.append(group_merge_remain)
+
+            index_change.append(index_group_1) #anche questo è da rimuovere!!!
+
+            # TODO ricorda di segnare quale "struttura" hai modificato, 
+            # segnalare i nodi modificati in index_change, e i nodi da aggiungere in group_change
+    print("hello")
+    #TODO modifica del gruppo: tolgo i gruppi con indice index_change e aggungo al gruppo i nodi in group_change       
 
 def get_list_min_and_max_from_table(dict_table): #input un dizionario, output la lista di max e min per ogni attributo (l'envelope)
     attributes_maximum_value = list()
@@ -275,12 +357,21 @@ def main_naive(k_value=None, p_value=None, paa_value=None, dataset_path=None):
 
         # start k_anonymity_top_down
         time_series_k_anonymized = list()
+        tree_structure = list() #NOTE serve per il postprocessing
         time_series_dict_copy = time_series_dict.copy()
         logger.info("Start k-anonymity top down approach")
         top_down_greedy_clustering(algorithm="naive", time_series=time_series_dict_copy, partition_size=k_value,
                                       maximum_value=attributes_maximum_value, minimum_value=attributes_minimum_value,
-                                      time_series_clustered=time_series_k_anonymized)
+                                      time_series_clustered=time_series_k_anonymized, tree_structure=tree_structure)
         logger.info("End k-anonymity top down approach")
+
+        logger.info("Start postprocessing k-anonymity top down approach")
+        top_down_greedy_clustering_postprocessing(algorithm="naive", time_series_clustered=time_series_k_anonymized, 
+                                                  tree_structure=tree_structure, partition_size=k_value, 
+                                                  maximum_value=attributes_maximum_value, minimum_value=attributes_minimum_value)
+        # servirebbero tree_structure, time_series_k_anonym, k_value, 
+        # FIXME devo vedere se è più conveniente, per i nodi con size < k, fare il merge con il vicino o rubacchiare delle tuple da chi ne ha di più
+        logger.info("End postprocessing k-anonymity top down approach")
 
         # start kp anonymity
         dataset_anonymized = DatasetAnonymized()
@@ -339,7 +430,7 @@ def main_kapra(k_value=None, p_value=None, paa_value=None, dataset_path=None):
 
         #FIXME mi serve davvero calcolare max e min con kapra? secondo me no..
         # save all maximum value for each attribute
-        attributes_minimum_value, attributes_maximum_value = get_list_min_and_max_from_table(time_series_dict)
+        #attributes_minimum_value, attributes_maximum_value = get_list_min_and_max_from_table(time_series_dict)
 
         #NOTE fino a qua lo tengo uguale: ho i min e max per ogni attributo, e il time_series_dict
 
@@ -379,7 +470,6 @@ def main_kapra(k_value=None, p_value=None, paa_value=None, dataset_path=None):
                 p_group_to_split = p_group_list.pop(index)
 
                 # start top down greedy clustering
-                # non serve max e min perchè non ci servono parametri globali sugli attributi come in naive
                 top_down_greedy_clustering(algorithm="kapra", time_series=p_group_to_split, partition_size=p_value, 
                                       time_series_clustered=p_group_splitted)
                 
@@ -387,6 +477,7 @@ def main_kapra(k_value=None, p_value=None, paa_value=None, dataset_path=None):
 
         # start k_anonymity_top_down
         time_series_k_anonymized = list()
+        """
         time_series_dict_copy = time_series_dict.copy()
         logger.info("Start k-anonymity top down approach")
         top_down_greedy_clustering(time_series=time_series_dict_copy, partition_size=k_value,
@@ -424,7 +515,7 @@ def main_kapra(k_value=None, p_value=None, paa_value=None, dataset_path=None):
 
             dataset_anonymized.pattern_anonymized_data.append(good_leaf_nodes)
         dataset_anonymized.compute_anonymized_data() # NOTE cosa fa? sembra mettere tutto insieme..
-        dataset_anonymized.save_on_file(Path(output_path))
+        dataset_anonymized.save_on_file(Path(output_path))"""
 
 
 if __name__ == "__main__":
