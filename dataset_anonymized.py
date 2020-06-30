@@ -6,7 +6,8 @@ from pathlib import Path
 class DatasetAnonymized:
     def __init__(self, anonymized_data: list = list(), pattern_anonymized_data: list = list()):
         self.anonymized_data = anonymized_data #NOTE contiene i k-group
-        self.pattern_anonymized_data = pattern_anonymized_data #NOTE contiene le liste dei relativi good-leaf-nodes corrispondenti ai k-group
+        self.pattern_anonymized_data = dict() #dizionario con key, pattern per ogni tupla
+        #self.pattern_anonymized_data = pattern_anonymized_data #NOTE contiene le liste dei relativi good-leaf-nodes corrispondenti ai k-group
         self.final_data_anonymized = dict()
 
 
@@ -20,7 +21,9 @@ class DatasetAnonymized:
             logger.info("Start creation Group {}".format(index))
 
             group = self.anonymized_data[index] #NOTE prende un k-group
-            list_good_leaf_node = self.pattern_anonymized_data[index] #NOTE prende la lista delle good-leaf relativa al k-group
+            
+            #list_good_leaf_node = self.pattern_anonymized_data[index] #NOTE prende la lista delle good-leaf relativa al k-group
+            
             max_value = np.amax(np.array(list(group.values())), 0)
             min_value = np.amin(np.array(list(group.values())), 0)
             for key in group.keys(): #NOTE per ogni chiave nel gruppo di chiavi del k-group
@@ -29,14 +32,19 @@ class DatasetAnonymized:
                 value_row = list()
                 for column_index in range(0, len(max_value)):
                     value_row.append("[{}-{}]".format(min_value[column_index], max_value[column_index])) # NOTE anonimizza con il min e max del gruppo, ovvero l'envelope
-                for node in list_good_leaf_node: #NOTE itera tutti i nodi good leaf relativi al k-group, cercando il nodo (P-group) che contenga la time series, in modo da aggiungere il PR
-                    if key in node.group.keys():
-                        value_row.append(node.pattern_representation) #NOTE aggiunge la PR relativa alla riga
+                
+                value_row.append(self.pattern_anonymized_data[key]) #FIXME aggiunge il pr 
+
+                #for node in list_good_leaf_node: #NOTE itera tutti i nodi good leaf relativi al k-group, cercando il nodo (P-group) che contenga la time series, in modo da aggiungere il PR
+                #    if key in node.group.keys():
+                #        value_row.append(node.pattern_representation) #NOTE aggiunge la PR relativa alla riga
+                
                 value_row.append("Group: {}".format(index))
                 self.final_data_anonymized[key] = value_row #NOTE la riga comprensiva di tutti i dati
                 logger.info(key)
                 logger.info(value_row)
             logger.info("Finish creation Group {}".format(index))
+
 
     def save_on_file(self, name_file):
         with open(name_file, "w") as file_to_write:

@@ -388,6 +388,9 @@ def main_naive(k_value=None, p_value=None, paa_value=None, dataset_path=None):
 
         # start kp anonymity
         dataset_anonymized = DatasetAnonymized()
+        
+        pattern_representation_dict = dict() #ad ogni time series è associato il pr
+
         for group in time_series_k_anonymized:
             # append group to anonymized_data (after we will create a complete dataset anonymized)
             dataset_anonymized.anonymized_data.append(group) #TODO metto un k-group dentro a questa struttura
@@ -412,7 +415,14 @@ def main_naive(k_value=None, p_value=None, paa_value=None, dataset_path=None):
                 for x in good_leaf_nodes:
                     logger.info("Now Good leaf node {}, {}".format(x.size, x.pattern_representation))
 
-            dataset_anonymized.pattern_anonymized_data.append(good_leaf_nodes) #TODO pattern_anonymized_data è una lista che contiene le liste dei good_leaf_nodes
+            for node in good_leaf_nodes: #NOTE maxi dizionario che contiene key:pr per tutte le tuple
+                pr = node.pattern_representation
+                for key in node.group:
+                    pattern_representation_dict[key] = pr
+
+            #dataset_anonymized.pattern_anonymized_data.append(good_leaf_nodes) #TODO pattern_anonymized_data è una lista che contiene le liste dei good_leaf_nodes
+        
+        dataset_anonymized.pattern_anonymized_data.update(pattern_representation_dict)
         dataset_anonymized.compute_anonymized_data() # NOTE cosa fa? sembra mettere tutto insieme..
         dataset_anonymized.save_on_file(Path(output_path))
 
@@ -465,15 +475,19 @@ def main_kapra(k_value=None, p_value=None, paa_value=None, dataset_path=None):
         # TODO group formation phase
 
         # preprocessing
+        pattern_representation_dict = dict() #ad ogni time series è associato il pr
         p_group_list = list() # è una lista di dizionari
         for node in good_leaf_nodes:
             p_group_list.append(node.group)
+            pr = node.pattern_representation
+            for key in node.group:
+                pattern_representation_dict[key] = pr
 
         p_group_to_add = list()
         index_to_remove = list()
 
         #NOTE qui ho 810 ts invece che 811 perchè una è stata soppressa!!!!!
-        
+
         for index, p_group in enumerate(p_group_list):
             if len(p_group) >= 2*p_value: #quindi devo splittarlo
                 
@@ -490,11 +504,17 @@ def main_kapra(k_value=None, p_value=None, paa_value=None, dataset_path=None):
                                                   tree_structure=tree_structure, partition_size=p_value)
                 logger.info("End postprocessing k-anonymity top down approach")
                 
+                #FIXME gestire nodi da aggiungere
+
                 p_group_to_add += p_group_splitted # aggiungo il nuovo gruppone a quelli da aggiungere
                 index_to_remove.append(index) # mi segno l'indice da togliere
 
+        #TODO devo
+        
         p_group_list = [group for (index, group) in enumerate(p_group_list) if index not in index_to_remove ]
         p_group_list += p_group_to_add #sopra tolgo i modificati, sotto aggiungo i modificati
+
+        #devo aggiustare i node, togliendone uno per uno (index to remove)
 
 
         # start k_anonymity_top_down
