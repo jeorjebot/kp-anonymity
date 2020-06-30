@@ -352,23 +352,3 @@ class Node:
         print("sopprimo le serie rimanenti")
         for time_series in bad_leaf_nodes_dict.values():
             suppressed_nodes = suppressed_nodes + time_series
-
-
-    #NOTE Quicksort preso da https://www.geeksforgeeks.org/python-program-for-quicksort/
-    @staticmethod
-    def partition(arr, low, high): 
-        i = (low-1)         # index of smaller element 
-        pivot = arr[high]     # pivot 
-        for j in range(low, high): 
-            if arr[j].level <= pivot.level: 
-                i = i+1 
-                arr[i], arr[j] = arr[j], arr[i] 
-        arr[i+1], arr[high] = arr[high], arr[i+1] 
-        return (i+1)
-
-    @staticmethod
-    def quickSort(arr, low, high): 
-        if low < high: 
-            pi = Node.partition(arr,low,high) 
-            Node.quickSort(arr, low, pi-1) 
-            Node.quickSort(arr, pi+1, high) 
