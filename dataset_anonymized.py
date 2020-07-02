@@ -4,11 +4,12 @@ from pathlib import Path
 
 
 class DatasetAnonymized:
-    def __init__(self, anonymized_data: list = list(), pattern_anonymized_data: list = list()):
+    def __init__(self, anonymized_data: list = list(), pattern_anonymized_data: dict = dict(), suppressed_data: list = list()):
         self.anonymized_data = anonymized_data #NOTE contiene i k-group
-        self.pattern_anonymized_data = dict() #dizionario con key, pattern per ogni tupla
-        #self.pattern_anonymized_data = pattern_anonymized_data #NOTE contiene le liste dei relativi good-leaf-nodes corrispondenti ai k-group
+        self.pattern_anonymized_data = pattern_anonymized_data #dizionario con key, pattern per ogni tupla
+        self.suppressed_data = suppressed_data
         self.final_data_anonymized = dict()
+
 
 
     def compute_anonymized_data(self):
@@ -34,16 +35,22 @@ class DatasetAnonymized:
                     value_row.append("[{}-{}]".format(min_value[column_index], max_value[column_index])) # NOTE anonimizza con il min e max del gruppo, ovvero l'envelope
                 
                 value_row.append(self.pattern_anonymized_data[key]) #FIXME aggiunge il pr 
-
-                #for node in list_good_leaf_node: #NOTE itera tutti i nodi good leaf relativi al k-group, cercando il nodo (P-group) che contenga la time series, in modo da aggiungere il PR
-                #    if key in node.group.keys():
-                #        value_row.append(node.pattern_representation) #NOTE aggiunge la PR relativa alla riga
-                
                 value_row.append("Group: {}".format(index))
+
                 self.final_data_anonymized[key] = value_row #NOTE la riga comprensiva di tutti i dati
                 logger.info(key)
                 logger.info(value_row)
             logger.info("Finish creation Group {}".format(index))
+        
+        logger.info("Add suppressed data")
+        for index in range(0, len(self.suppressed_data)):
+            group = self.suppressed_data[index]
+            for key in group.keys():
+                value_row = [" - "]*len(group[key])
+                value_row.append(" - ") # pattern rapresentation
+                value_row.append(" - ") # group
+                self.final_data_anonymized[key] = value_row
+
 
 
     def save_on_file(self, name_file):

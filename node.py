@@ -350,5 +350,6 @@ class Node:
 
         # TODO sopprimere le altre
         print("sopprimo le serie rimanenti")
-        for time_series in bad_leaf_nodes_dict.values():
-            suppressed_nodes = suppressed_nodes + time_series
+        remaining_bad_leaf_nodes = list(bad_leaf_nodes_dict.values())[0]
+        for node in remaining_bad_leaf_nodes:
+            suppressed_nodes.append(node)

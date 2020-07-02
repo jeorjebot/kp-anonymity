@@ -344,7 +344,7 @@ def top_down_greedy_clustering_postprocessing(algorithm="naive", time_series_clu
         if len(group) < partition_size:
             bad_group_count +=1
 
-    time_series_postprocessed = time_series_clustered #assegnamento per ritornare i valori     
+    time_series_postprocessed += time_series_clustered #assegnamento per ritornare i valori     
     
     if bad_group_count > 0: #nel raro caso che servisse reiterare
         top_down_greedy_clustering_postprocessing(algorithm=algorithm, time_series_clustered=time_series_postprocessed, 
@@ -368,6 +368,19 @@ def get_list_min_and_max_from_table(dict_table): #input un dizionario, output la
         attributes_minimum_value.append(time_series[column].min())
     return attributes_minimum_value, attributes_maximum_value
 
+def find_group_with_min_value_loss(group_to_search=None, group_to_merge=dict(), index_ignored=list()):
+    min_p_group = {"group" : dict(), "index" : None, "vl" : float("inf")} #forse è più facile così da gestire?s
+    for index, group in enumerate(group_to_search):
+        if index not in index_ignored: #quindi non è tra quelli già utilizzati
+            vl = compute_instant_value_loss(list(group.values()) + list(group_to_merge.values()))
+            if vl < min_p_group["vl"]:
+                min_p_group["vl"] = vl
+                min_p_group["group"] = group
+                min_p_group["index"] = index
+    return min_p_group["group"], min_p_group["index"]
+    #k_group.update(min_p_group["group"]) # aggiunto
+    #index_to_remove.append(min_p_group["index"]) #segnato tramite indice che è aggiunto
+    #p_group_list, index_to_remove #togli:  
 
 def main_naive(k_value=None, p_value=None, paa_value=None, dataset_path=None):
     """
@@ -420,13 +433,14 @@ def main_naive(k_value=None, p_value=None, paa_value=None, dataset_path=None):
         time_series_k_anonymized = time_series_postprocessed
 
         # start kp anonymity
-        dataset_anonymized = DatasetAnonymized()
+        
         
         pattern_representation_dict = dict() #ad ogni time series è associato il pr
+        k_group_list = list()
 
         for group in time_series_k_anonymized:
             # append group to anonymized_data (after we will create a complete dataset anonymized)
-            dataset_anonymized.anonymized_data.append(group) #TODO metto un k-group dentro a questa struttura
+            k_group_list.append(group) #TODO metto un k-group dentro a questa struttura
             # good leaf nodes
             good_leaf_nodes = list()
             bad_leaf_nodes = list()
@@ -453,9 +467,8 @@ def main_naive(k_value=None, p_value=None, paa_value=None, dataset_path=None):
                 for key in node.group:
                     pattern_representation_dict[key] = pr
 
-            #dataset_anonymized.pattern_anonymized_data.append(good_leaf_nodes) #TODO pattern_anonymized_data è una lista che contiene le liste dei good_leaf_nodes
-        
-        dataset_anonymized.pattern_anonymized_data.update(pattern_representation_dict)
+        dataset_anonymized = DatasetAnonymized(pattern_anonymized_data=pattern_representation_dict,
+                                               anonymized_data=k_group_list)
         dataset_anonymized.compute_anonymized_data() # NOTE cosa fa? sembra mettere tutto insieme..
         dataset_anonymized.save_on_file(Path(output_path))
 
@@ -504,9 +517,11 @@ def main_kapra(k_value=None, p_value=None, paa_value=None, dataset_path=None):
         if(len(bad_leaf_nodes) > 0):
             Node.recycle_bad_leaves(p_value, good_leaf_nodes, bad_leaf_nodes, suppressed_nodes, paa_value)
 
-
+        suppressed_nodes_list = list()
+        for node in suppressed_nodes:
+            suppressed_nodes_list.append(node.group) 
+        
         # group formation phase
-        dataset_anonymized = DatasetAnonymized()
        
         # preprocessing
         pattern_representation_dict = dict() #ad ogni time series è associato il pr
@@ -517,7 +532,6 @@ def main_kapra(k_value=None, p_value=None, paa_value=None, dataset_path=None):
             for key in node.group:
                 pattern_representation_dict[key] = pr
 
-        dataset_anonymized.pattern_anonymized_data.update(pattern_representation_dict) #passo alla struttura le varie pr
         p_group_to_add = list()
         index_to_remove = list()
 
@@ -549,92 +563,58 @@ def main_kapra(k_value=None, p_value=None, paa_value=None, dataset_path=None):
         p_group_list = [group for (index, group) in enumerate(p_group_list) if index not in index_to_remove ]
         p_group_list += p_group_to_add #sopra tolgo i modificati, sotto aggiungo i modificati
         
-        index_to_remove = list()
-
-        """debug per trovare quelli con len < p_value
-        count = 0
-        index_search = list()
-        for index, group in enumerate(p_group_list):
-            if len(group)< p_value:
-                count +=1
-                index_search.append(index)
-        print(count)
-        print(index_search)"""
+        
+        k_group_list = list() #è una lista di dizionari
+        index_to_remove = list() 
         
         # step 1
         for index, group in enumerate(p_group_list):
             if len(group) >= k_value:
                 index_to_remove.append(index)
-                dataset_anonymized.anonymized_data.append(group) #appendo il k-group
+                k_group_list.append(group) #appendo il k-group
+        
         p_group_list = [group for (index, group) in enumerate(p_group_list) if index not in index_to_remove ]
 
-        # step 2
-        #TODO
-        # cerca group con min vl e aggiungilo a k_group
-        #
-        # fintanto che k:_group è < di k, cerca il gruppo appartentente
-        # ai rimanenti gruppi, che mergiato con k_group dia min vl, e aggiungilo
-        #
-        # salva k_group e salva indici da togliere
-        # 
-        k_group_list = list() #è una lista di dizionari
+        # step 2 - 3 - 4
         index_to_remove = list()
-        while len(p_group_list) >= k_value:
-            k_group = dict()
-            min_p_group = {"group" : dict(), "index" : None, "vl" : float("inf")} #forse è più facile così da gestire?s
-            for index, group in enumerate(p_group_list):
-                if index not in index_to_remove: #quindi non è tra quelli già utilizzati
-                    vl = compute_instant_value_loss(list(group.values()))
-                    if vl < min_p_group["vl"]:
-                        min_p_group["vl"] = vl
-                        min_p_group["group"] = group
-                        min_p_group["index"] = index
-            
-            k_group.update(min_p_group["group"]) # aggiunto
-            index_to_remove.append(min_p_group["index"]) #segnato tramite indice che è aggiunto
-        pass
+        p_group_list_size = sum([len(group) for group in p_group_list])
+        
+        while p_group_list_size >= k_value:
+            k_group, index_min = find_group_with_min_value_loss(group_to_search=p_group_list, 
+                                                                index_ignored=index_to_remove)
+            index_to_remove.append(index_min)
+            p_group_list_size -= len(k_group)
+            #NOTE ora ho il k_group con dentro il min
 
 
+            while len(k_group) < k_value:
+                #cerco un gruppo da aggiungere che minimizzi vl
+                group_to_add, index_group_to_add = find_group_with_min_value_loss(group_to_search=p_group_list,
+                                                                                  group_to_merge=k_group, 
+                                                                                  index_ignored=index_to_remove)
+                index_to_remove.append(index_group_to_add)
+                k_group.update(group_to_add) #aggiungo il gruppo trovato a k_group
+                p_group_list_size -= len(group_to_add)
+                #if watch == len(k_group):
+                #    print("qualquadra non cosa")
 
-        """
-        time_series_dict_copy = time_series_dict.copy()
-        logger.info("Start k-anonymity top down approach")
-        top_down_greedy_clustering(time_series=time_series_dict_copy, partition_size=k_value,
-                                      maximum_value=attributes_maximum_value, minimum_value=attributes_minimum_value,
-                                      time_series_clustered=time_series_k_anonymized)
-        logger.info("End k-anonymity top down approach")
+            k_group_list.append(k_group)   
+        
+        # step 5
+        p_group_remaining = [group for (index, group) in enumerate(p_group_list) if index not in index_to_remove ]
+        
+        for p_group in p_group_remaining:
+            k_group, index_k_group = find_group_with_min_value_loss(group_to_search=k_group_list,
+                                                                    group_to_merge=p_group)
+            k_group_list.pop(index_k_group)
+            k_group.update(p_group)
+            k_group_list.append(k_group) #aggiungo alla lista il gruppo "mergiato"
 
-        # start kp anonymity
-        # print(list(time_series_k_anonymized[0].values()))
-
-        dataset_anonymized = DatasetAnonymized()
-        for group in time_series_k_anonymized:
-            # append group to anonymized_data (after we will create a complete dataset anonymized)
-            dataset_anonymized.anonymized_data.append(group) #NOTE metto un k-group dentro a questa struttura
-            # good leaf nodes
-            good_leaf_nodes = list()
-            bad_leaf_nodes = list()
-            # creation root and start splitting node
-            logger.info("Start Splitting node")
-            node = Node(level=1, group=group, paa_value=paa_value)
-            node.start_splitting(p_value, max_level, good_leaf_nodes, bad_leaf_nodes) # NOTE il nodo inizia la split node
-            logger.info("Finish Splitting node")
-
-            logger.info("Start postprocessing node merge all bad leaf node (if exists) in good " # NOTE : post processing dei bad leaf
-                        "leaf node with most similar patter")
-            for x in good_leaf_nodes:
-                logger.info("Good leaf node {}, {}".format(x.size, x.pattern_representation))
-            for x in bad_leaf_nodes:
-                logger.info("Bad leaf node {}".format(x.size))
-            if len(bad_leaf_nodes) > 0:
-                logger.info("Add bad node {} to good node, start postprocessing".format(len(bad_leaf_nodes)))
-                Node.postprocessing(good_leaf_nodes, bad_leaf_nodes)
-                for x in good_leaf_nodes:
-                    logger.info("Now Good leaf node {}, {}".format(x.size, x.pattern_representation))
-
-            dataset_anonymized.pattern_anonymized_data.append(good_leaf_nodes)
-        dataset_anonymized.compute_anonymized_data() # NOTE cosa fa? sembra mettere tutto insieme..
-        dataset_anonymized.save_on_file(Path(output_path))"""
+        dataset_anonymized = DatasetAnonymized(pattern_anonymized_data=pattern_representation_dict,
+                                               anonymized_data=k_group_list,
+                                               suppressed_data=suppressed_nodes_list)
+        dataset_anonymized.compute_anonymized_data()
+        dataset_anonymized.save_on_file(Path(output_path))
 
 
 if __name__ == "__main__":
