@@ -9,7 +9,6 @@ from pathlib import Path
 from dataset_anonymized import DatasetAnonymized
 
 max_level = 5 #caputo: 4
-output_path = "Dataset/output.csv"
 
 
 def clean_data(dataset_path_to_clean):
@@ -382,7 +381,7 @@ def find_group_with_min_value_loss(group_to_search=None, group_to_merge=dict(), 
     #index_to_remove.append(min_p_group["index"]) #segnato tramite indice che è aggiunto
     #p_group_list, index_to_remove #togli:  
 
-def main_naive(k_value=None, p_value=None, paa_value=None, dataset_path=None):
+def main_naive(k_value=None, p_value=None, paa_value=None, dataset_path=None, output_path=None):
     """
     k-P anonymity based on work of Shou et al. 2011,
     Supporting Pattern-Preserving Anonymization for Time-Series Data
@@ -470,9 +469,9 @@ def main_naive(k_value=None, p_value=None, paa_value=None, dataset_path=None):
         dataset_anonymized = DatasetAnonymized(pattern_anonymized_data=pattern_representation_dict,
                                                anonymized_data=k_group_list)
         dataset_anonymized.compute_anonymized_data() # NOTE cosa fa? sembra mettere tutto insieme..
-        dataset_anonymized.save_on_file(Path(output_path))
+        dataset_anonymized.save_on_file(output_path)
 
-def main_kapra(k_value=None, p_value=None, paa_value=None, dataset_path=None):
+def main_kapra(k_value=None, p_value=None, paa_value=None, dataset_path=None, output_path=None):
     """
     k-P anonymity based on work of Shou et al. 2011,
     Supporting Pattern-Preserving Anonymization for Time-Series Data
@@ -614,27 +613,31 @@ def main_kapra(k_value=None, p_value=None, paa_value=None, dataset_path=None):
                                                anonymized_data=k_group_list,
                                                suppressed_data=suppressed_nodes_list)
         dataset_anonymized.compute_anonymized_data()
-        dataset_anonymized.save_on_file(Path(output_path))
+        dataset_anonymized.save_on_file(output_path)
 
 
 if __name__ == "__main__":
 
-    if len(sys.argv) == 6:
+    if len(sys.argv) == 7:
         algorithm = sys.argv[1] #NOTE naive o kapra
         k_value = int(sys.argv[2])
         p_value = int(sys.argv[3])
         paa_value = int(sys.argv[4])
         dataset_path = sys.argv[5] #NOTE la gestione del path non va bene, deve essere assoluta rispetto a unix/win
+        output_name = sys.argv[6]
+        output_p = "Dataset/Anonymized/" + str(output_name) + ".csv"
         if k_value < p_value:
-            print("[*] Usage: python kp-anonymity.py algorithm k_value p_value paa_value dataset.csv")
+            print("[*] Usage: python kp-anonymity.py algorithm k_value p_value paa_value dataset.csv output_name")
             print("[*] k_value should be greater than p_value")
         elif algorithm == "naive":
-            main_naive(k_value=k_value, p_value=p_value, paa_value=paa_value, dataset_path=Path(dataset_path))
+            main_naive(k_value=k_value, p_value=p_value, paa_value=paa_value, 
+                       dataset_path=Path(dataset_path), output_path=Path(output_p))
         elif algorithm == "kapra":    
-            main_kapra(k_value=k_value, p_value=p_value, paa_value=paa_value, dataset_path=Path(dataset_path))
+            main_kapra(k_value=k_value, p_value=p_value, paa_value=paa_value, 
+                       dataset_path=Path(dataset_path), output_path=Path(output_p))
         else:
-            print("[*] Usage: python kp-anonymity.py algorithm k_value p_value paa_value dataset.csv")
+            print("[*] Usage: python kp-anonymity.py algorithm k_value p_value paa_value dataset.csv output_name")
             print("[*] Algorithm supported: naive, kapra")
             
     else:
-        print("[*] Usage: python kp-anonymity.py algorithm k_value p_value paa_value dataset.csv")
+        print("[*] Usage: python kp-anonymity.py algorithm k_value p_value paa_value dataset.csv output_name")

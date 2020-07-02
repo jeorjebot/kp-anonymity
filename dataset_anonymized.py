@@ -53,8 +53,8 @@ class DatasetAnonymized:
 
 
 
-    def save_on_file(self, name_file):
-        with open(name_file, "w") as file_to_write:
+    def save_on_file(self, output_path):
+        with open(output_path, "w") as file_to_write:
             value_to_print_on_file = ""
             for key, value in self.final_data_anonymized.items():
                 value_to_print_on_file = key
