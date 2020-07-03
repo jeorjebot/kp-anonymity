@@ -18,8 +18,9 @@ class DatasetAnonymized:
         :return:
         """
         logger.info("Start creation dataset anonymized")
+        logger.info("Added {} suppressed group".format(len(self.anonymized_data)))
         for index in range(0, len(self.anonymized_data)): 
-            logger.info("Start creation Group {}".format(index))
+            #logger.info("Start creation Group {}".format(index))
 
             group = self.anonymized_data[index]
                         
@@ -36,9 +37,9 @@ class DatasetAnonymized:
                 value_row.append("Group: {}".format(index))
 
                 self.final_data_anonymized[key] = value_row
-            logger.info("Finish creation Group {}".format(index))
+            #logger.info("Finish creation Group {}".format(index))
         
-        logger.info("Add {} suppressed data".format(len(self.suppressed_data)))
+        logger.info("Added {} suppressed group".format(len(self.suppressed_data)))
         for index in range(0, len(self.suppressed_data)):
             group = self.suppressed_data[index]
             for key in group.keys():
@@ -48,6 +49,7 @@ class DatasetAnonymized:
                 self.final_data_anonymized[key] = value_row
 
     def save_on_file(self, output_path):
+        logger.info("Saving on file dataset anonymized")
         with open(output_path, "w") as file_to_write:
             value_to_print_on_file = ""
             for key, value in self.final_data_anonymized.items():

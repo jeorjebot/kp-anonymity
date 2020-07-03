@@ -26,7 +26,7 @@ python3 ../create_dataset.py $DATASET_TO_SPLIT $DIM_DATASETS
 for dim in $DIM_DATASETS; do
     counter=$((counter+1))
     for alg in $ALGS; do
-        echo "Processing Dataset:\tAlgorithm ==> $alg\tInstances ==> $dim"
+        echo "\nProcessing Dataset:\tAlgorithm ==> $alg\tInstances ==> $dim"
         start=$(python2 -c 'import time; print time.time()')
         python3 ../kp-anonymity.py $alg $K $P $PAA $DATA_DIR$dim$TYPE_DAT $OUT_DIR$alg$counter$TYPE_DAT
         stop=$(python2 -c 'import time; print time.time()')
