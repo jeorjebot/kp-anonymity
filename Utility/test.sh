@@ -1,7 +1,7 @@
 #!/bin/sh
 
 DATA_DIR='../Dataset/Input/Facebook_Economy_final_'
-OUT_DIR='../Dataset/Anonymized/' #forse non mi serve nemmeno
+OUT_DIR='../Dataset/Anonymized/' 
 K='10'
 P='2'
 PAA='5'
@@ -37,4 +37,8 @@ done
 
 # draw stat
 python3 ./draw_stat.py
+
+# final clean
+rm -f $OUT_DIR*
+rm -f $DATA_DIR*
 rm -f 'tmp.txt'

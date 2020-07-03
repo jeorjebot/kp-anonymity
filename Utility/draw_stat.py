@@ -13,19 +13,13 @@ for line in lines_read:
 labels = list()
 naive_time = list()
 kapra_time = list()
-#naive 50 1.80
+
 for index, line in enumerate(lines):
-    if index % 2 == 0: #naive
+    if index % 2 == 0: # naive
         labels.append(line[1])
         naive_time.append(float(line[2]))
-        #label = line[0] + " " + line[1] # naive 50
-        #naive.append({"x": index, "y": float(line[2]), "label" : label})
-    else: #kapra
+    else: # kapra
         kapra_time.append(float(line[2]))
-        #label = line[0] + " " + line[1] # naive 50
-        #kapra.append({"x": index, "y": float(line[2]), "label" : label})
-
-
 
 
 x = np.arange(len(labels))  # the label locations
