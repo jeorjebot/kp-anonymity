@@ -14,7 +14,7 @@ counter=0
 
 # removing old anonymized output if any
 # ./clean.sh
-rm -f $OUT_DIR*
+rm -f $OUT_DIR*.csv
 rm -f $DATA_DIR*
 rm -f 'tmp.txt'
 
@@ -39,6 +39,6 @@ done
 python3 ./draw_stat.py
 
 # final clean
-rm -f $OUT_DIR*
+rm -f $OUT_DIR*.csv
 rm -f $DATA_DIR*
 rm -f 'tmp.txt'
