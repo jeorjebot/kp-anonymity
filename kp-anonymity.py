@@ -47,10 +47,12 @@ def compute_normalized_certainty_penalty_on_ai(table=None, maximum_value=None, m
         a.append(abs(maximum_value[index_attribute] - minimum_value[index_attribute]))
     ncp_t = 0
     for index in range(0, n):
-        try:
-            ncp_t += (z_1[index] - y_1[index]) / a[index]
-        except ZeroDivisionError:
+        if a[index] == 0:
             ncp_t += 0
+        else:
+            ncp_t += (z_1[index] - y_1[index]) / a[index]
+        #except ZeroDivisionError:
+        #    ncp_t += 0
     ncp_T = len(table)*ncp_t 
     return ncp_T
 
@@ -624,17 +626,17 @@ if __name__ == "__main__":
         p_value = int(sys.argv[3])
         paa_value = int(sys.argv[4])
         dataset_path = sys.argv[5] #NOTE la gestione del path non va bene, deve essere assoluta rispetto a unix/win
-        output_name = sys.argv[6]
-        output_p = "Dataset/Anonymized/" + str(output_name) + ".csv"
+        output_path = sys.argv[6]
+        #output_p = "Dataset/Anonymized/" + str(output_name) + ".csv"
         if k_value < p_value:
             print("[*] Usage: python kp-anonymity.py algorithm k_value p_value paa_value dataset.csv output_name")
             print("[*] k_value should be greater than p_value")
         elif algorithm == "naive":
             main_naive(k_value=k_value, p_value=p_value, paa_value=paa_value, 
-                       dataset_path=Path(dataset_path), output_path=Path(output_p))
+                       dataset_path=Path(dataset_path), output_path=Path(output_path))
         elif algorithm == "kapra":    
             main_kapra(k_value=k_value, p_value=p_value, paa_value=paa_value, 
-                       dataset_path=Path(dataset_path), output_path=Path(output_p))
+                       dataset_path=Path(dataset_path), output_path=Path(output_path))
         else:
             print("[*] Usage: python kp-anonymity.py algorithm k_value p_value paa_value dataset.csv output_name")
             print("[*] Algorithm supported: naive, kapra")

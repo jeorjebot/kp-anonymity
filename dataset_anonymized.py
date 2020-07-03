@@ -38,8 +38,8 @@ class DatasetAnonymized:
                 value_row.append("Group: {}".format(index))
 
                 self.final_data_anonymized[key] = value_row #NOTE la riga comprensiva di tutti i dati
-                logger.info(key)
-                logger.info(value_row)
+                #logger.info(key)
+                #logger.info(value_row)
             logger.info("Finish creation Group {}".format(index))
         
         logger.info("Add suppressed data")
