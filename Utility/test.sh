@@ -36,7 +36,9 @@ for dim in $DIM_DATASETS; do
 done
 
 # draw stat
+echo "\nComputing statistics..."
 python3 ./draw_stat.py
+echo "\nDone!"
 
 # final clean
 rm -f $OUT_DIR*.csv

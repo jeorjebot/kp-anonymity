@@ -18,7 +18,7 @@ class DatasetAnonymized:
         :return:
         """
         logger.info("Start creation dataset anonymized")
-        logger.info("Added {} suppressed group".format(len(self.anonymized_data)))
+        logger.info("Added {} anonymized group".format(len(self.anonymized_data)))
         for index in range(0, len(self.anonymized_data)): 
             #logger.info("Start creation Group {}".format(index))
 
