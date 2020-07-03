@@ -1,2 +1,40 @@
 #!/bin/sh
 
+DATA_DIR='../Dataset/Input/Facebook_Economy_final_'
+OUT_DIR='../Dataset/Anonymized/' #forse non mi serve nemmeno
+K='10'
+P='2'
+PAA='5'
+
+DATASET_TO_SPLIT='../Dataset/Input/Facebook_Economy.csv'
+DIM_DATASETS='50 60 70'
+TYPE_DAT='.csv'
+ALGS='naive kapra'
+counter=0
+
+# removing old anonymized output if any
+# ./clean.sh
+rm -f $OUT_DIR*
+rm -f $DATA_DIR*
+rm -f 'tmp.txt'
+
+
+# create datasets
+python3 ../create_dataset.py $DATASET_TO_SPLIT $DIM_DATASETS
+
+# test algs
+for dim in $DIM_DATASETS; do
+    counter=$((counter+1))
+    for alg in $ALGS; do
+        echo "Processing Dataset:\tAlgorithm ==> $alg\tInstances ==> $dim"
+        start=$(python2 -c 'import time; print time.time()')
+        python3 ../kp-anonymity.py $alg $K $P $PAA $DATA_DIR$dim$TYPE_DAT $OUT_DIR$alg$counter$TYPE_DAT
+        stop=$(python2 -c 'import time; print time.time()')
+        elapsed=$(echo "$stop - $start" | bc)
+        echo $alg $dim $elapsed >> 'tmp.txt'
+    done
+done
+
+# draw stat
+python3 ./draw_stat.py
+rm -f 'tmp.txt'
