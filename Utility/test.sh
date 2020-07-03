@@ -7,7 +7,7 @@ P='2'
 PAA='5'
 
 DATASET_TO_SPLIT='../Dataset/Input/Facebook_Economy.csv'
-DIM_DATASETS='50 60 70'
+DIM_DATASETS=' 500 1000 5000 10000'
 TYPE_DAT='.csv'
 ALGS='naive kapra'
 counter=0
