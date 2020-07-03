@@ -38,7 +38,7 @@ class DatasetAnonymized:
                 self.final_data_anonymized[key] = value_row
             logger.info("Finish creation Group {}".format(index))
         
-        logger.info("Add suppressed data")
+        logger.info("Add {} suppressed data".format(len(self.suppressed_data)))
         for index in range(0, len(self.suppressed_data)):
             group = self.suppressed_data[index]
             for key in group.keys():

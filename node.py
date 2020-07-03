@@ -33,19 +33,19 @@ class Node:
         :return:
         """
         if self.size < p_value:
-            logger.info("size:{}, p_value:{} == bad-leaf".format(self.size, p_value))
+            #logger.info("size:{}, p_value:{} == bad-leaf".format(self.size, p_value))
             self.label = "bad-leaf"
             bad_leaf_nodes.append(self)
             return
 
         if self.level == max_level:
-            logger.info("size:{}, p_value:{} == good-leaf".format(self.size, p_value))
+            #logger.info("size:{}, p_value:{} == good-leaf".format(self.size, p_value))
             self.label = "good-leaf"
             good_leaf_nodes.append(self)
             return
 
         if p_value <= self.size < 2*p_value:
-            logger.info("Maximize-level, size:{}, p_value:{} == good-leaf".format(self.size, p_value))
+            #logger.info("Maximize-level, size:{}, p_value:{} == good-leaf".format(self.size, p_value))
             self.maximize_level_node(max_level)
             self.label = "good-leaf"
             good_leaf_nodes.append(self)
@@ -80,14 +80,13 @@ class Node:
         good_leaf = np.all(np.array(length_all_tentative_child) < p_value)
        
         if good_leaf:
-            logger.info("Good-leaf, all_tentative_child are < {}".format(p_value))
+            #logger.info("Good-leaf, all_tentative_child are < {}".format(p_value))
             self.label = "good-leaf"
             good_leaf_nodes.append(self)
             return
         else:
-            logger.info("N can be split")
-            logger.info("Compute tentative good nodes and tentative bad nodes")
-            
+            #logger.info("N can be split")
+            #logger.info("Compute tentative good nodes and tentative bad nodes")
             pr_keys = list(tentative_child_node.keys()) 
             # get index tentative good node
             pattern_representation_tg = list()
@@ -122,7 +121,7 @@ class Node:
                 total_size_tb_nodes += len(tb_node)
 
             if total_size_tb_nodes >= p_value:
-                logger.info("Merge all bad nodes in a single node, and label it as good-leaf")
+                #logger.info("Merge all bad nodes in a single node, and label it as good-leaf")
                 child_merge_node_group = dict()
                 for tb_node in tb_nodes:
                     for key, value in tb_node.items():
@@ -133,7 +132,7 @@ class Node:
                 good_leaf_nodes.append(node_merge)
 
                 nc = len(tg_nodes) + len(tb_nodes) 
-                logger.info("Split only tg_nodes {0}".format(len(tg_nodes)))
+                #logger.info("Split only tg_nodes {0}".format(len(tg_nodes)))
                 if nc >= 2:
                     for index in range(0, len(tg_nodes)):
                         node = Node(level=self.level, pattern_representation=pattern_representation_tg[index],
@@ -149,7 +148,7 @@ class Node:
 
             else: 
                 nc = len(tg_nodes) + len(tb_nodes) 
-                logger.info("Label all tb_node {0} as bad-leaf and split only tg_nodes {1}".format(len(tb_nodes),len(tg_nodes)))
+                #logger.info("Label all tb_node {0} as bad-leaf and split only tg_nodes {1}".format(len(tb_nodes),len(tg_nodes)))
                 for index in range(0, len(tb_nodes)):
                     node = Node(level=self.level, pattern_representation=pattern_representation_tb[index], label="bad-leaf",
                                 group=tb_nodes[index], parent=self, paa_value=self.paa_value)
@@ -222,13 +221,14 @@ class Node:
             if equal:
                 self.level = temp_level 
         if original_level != self.level: 
-            logger.info("New level for node: {}".format(self.level))
+            #logger.info("New level for node: {}".format(self.level))
             data = np.array(values_group[0])
             data_znorm = znorm(data)
             data_paa = paa(data_znorm, self.paa_value)
             self.pattern_representation = ts_to_string(data_paa, cuts_for_asize(self.level))
         else:
-            logger.info("Can't split again, max level already reached") # max level reached
+            #logger.info("Can't split again, max level already reached") # max level reached
+            pass
 
     @staticmethod
     def recycle_bad_leaves(p_value, good_leaf_nodes, bad_leaf_nodes, suppressed_nodes, paa_value):

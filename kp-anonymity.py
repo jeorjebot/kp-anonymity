@@ -98,7 +98,7 @@ def find_tuple_with_maximum_vl(fixed_tuple, time_series, key_fixed_tuple):
             if vl >= max_value:
                 tuple_with_max_vl = key
                 max_value = vl
-    logger.info("Max vl found: {} with tuple {} ".format(max_value, tuple_with_max_vl))           
+    #logger.info("Max vl found: {} with tuple {} ".format(max_value, tuple_with_max_vl))           
     return tuple_with_max_vl
     
 
@@ -119,7 +119,7 @@ def find_tuple_with_maximum_ncp(fixed_tuple, time_series, key_fixed_tuple, maxim
             if ncp >= max_value:
                 tuple_with_max_ncp = key
                 max_value = ncp
-    logger.info("Max ncp found: {} with tuple {} ".format(max_value, tuple_with_max_ncp))           
+    #logger.info("Max ncp found: {} with tuple {} ".format(max_value, tuple_with_max_ncp))           
     return tuple_with_max_ncp
 
 
@@ -133,18 +133,18 @@ def top_down_greedy_clustering(algorithm=None, time_series=None, partition_size=
     :return:
     """
     if len(time_series) < 2*partition_size:
-        logger.info("End Recursion")
+        #logger.info("End Recursion")
         time_series_clustered.append(time_series)
         tree_structure.append(group_label)
         return
     else:
-        logger.info("Start Partition with size {}".format(len(time_series)))
+        #logger.info("Start Partition with size {}".format(len(time_series)))
         keys = list(time_series.keys())
         rounds = 3
 
         # pick random tuple
         random_tuple = keys[random.randint(0, len(keys) - 1)] 
-        logger.info("Get random tuple (u1) {}".format(random_tuple))
+        #logger.info("Get random tuple (u1) {}".format(random_tuple))
         group_u = dict()
         group_v = dict()
         group_u[random_tuple] = time_series[random_tuple]
@@ -155,10 +155,10 @@ def top_down_greedy_clustering(algorithm=None, time_series=None, partition_size=
                 if round % 2 == 0:
                     if algorithm == "naive":
                         v = find_tuple_with_maximum_ncp(group_u[last_row], time_series, last_row, maximum_value, minimum_value)
-                        logger.info("{} round: Find tuple (v) that has max ncp {}".format(round +1,v))
+                        #logger.info("{} round: Find tuple (v) that has max ncp {}".format(round +1,v))
                     if algorithm == "kapra":
                         v = find_tuple_with_maximum_vl(group_u[last_row], time_series, last_row)
-                        logger.info("{} round: Find tuple (v) that has max vl {}".format(round +1,v))
+                        #logger.info("{} round: Find tuple (v) that has max vl {}".format(round +1,v))
 
                     group_v.clear()
                     group_v[v] = time_series[v]
@@ -167,10 +167,10 @@ def top_down_greedy_clustering(algorithm=None, time_series=None, partition_size=
                 else:
                     if algorithm == "naive":
                         u = find_tuple_with_maximum_ncp(group_v[last_row], time_series, last_row, maximum_value, minimum_value)
-                        logger.info("{} round: Find tuple (u) that has max ncp {}".format(round+1, u))
+                        #logger.info("{} round: Find tuple (u) that has max ncp {}".format(round+1, u))
                     if algorithm == "kapra":
                         u = find_tuple_with_maximum_vl(group_v[last_row], time_series, last_row)
-                        logger.info("{} round: Find tuple (u) that has max vl {}".format(round+1, u))
+                        #logger.info("{} round: Find tuple (u) that has max vl {}".format(round+1, u))
                     
                     group_u.clear()
                     group_u[u] = time_series[u]
@@ -210,7 +210,7 @@ def top_down_greedy_clustering(algorithm=None, time_series=None, partition_size=
                 del time_series[key]
 
 
-        logger.info("Group u: {}, Group v: {}".format(len(group_u), len(group_v)))
+        #logger.info("Group u: {}, Group v: {}".format(len(group_u), len(group_v)))
         if len(group_u) > partition_size:
             top_down_greedy_clustering(algorithm=algorithm, time_series=group_u, partition_size=partition_size,
                                           maximum_value=maximum_value, minimum_value=minimum_value,
@@ -422,23 +422,22 @@ def main_naive(k_value=None, p_value=None, paa_value=None, dataset_path=None, ou
             good_leaf_nodes = list()
             bad_leaf_nodes = list()
             # creation root and start splitting node
-            logger.info("Start Splitting node")
+            logger.info("Create-tree phase: initialization and start node splitting")
             node = Node(level=1, group=group, paa_value=paa_value)
             node.start_splitting(p_value, max_level, good_leaf_nodes, bad_leaf_nodes) 
-            logger.info("Finish Splitting node")
+            logger.info("Create-tree phase: finish node splitting")
 
-            logger.info("Start postprocessing node merge all bad leaf node (if exists) in good "
-                        "leaf node with most similar patter")
-            for x in good_leaf_nodes:
-                logger.info("Good leaf node {}, {}".format(x.size, x.pattern_representation))
-            for x in bad_leaf_nodes:
-                logger.info("Bad leaf node {}".format(x.size))
+            logger.info("Create-tree phase: start postprocessing")
+            #for x in good_leaf_nodes:
+            #   logger.info("Good leaf node {}, {}".format(x.size, x.pattern_representation))
+            #for x in bad_leaf_nodes:
+            #   logger.info("Bad leaf node {}".format(x.size))
             if len(bad_leaf_nodes) > 0:
-                logger.info("Add bad node {} to good node, start postprocessing".format(len(bad_leaf_nodes)))
+            #    logger.info("Add bad node {} to good node, start postprocessing".format(len(bad_leaf_nodes)))
                 Node.postprocessing(good_leaf_nodes, bad_leaf_nodes)
-                for x in good_leaf_nodes:
-                    logger.info("Now Good leaf node {}, {}".format(x.size, x.pattern_representation))
-
+            #    for x in good_leaf_nodes:
+            #        logger.info("Now Good leaf node {}, {}".format(x.size, x.pattern_representation))
+            logger.info("Create-tree phase: finish postprocessing")
             for node in good_leaf_nodes:
                 pr = node.pattern_representation
                 for key in node.group:
@@ -480,22 +479,24 @@ def main_kapra(k_value=None, p_value=None, paa_value=None, dataset_path=None, ou
         bad_leaf_nodes = list()
 
         # creation root and start splitting node
-        logger.info("Start Splitting Dataset")
+        logger.info("Create-tree phase: initialization and start node splitting with entire dataset")
         node = Node(level=1, group=time_series_dict, paa_value=paa_value)
         node.start_splitting(p_value, max_level, good_leaf_nodes, bad_leaf_nodes)
-        logger.info("Finish Splitting Dataset")
+        logger.info("Create-tree phase: finish node splitting")
 
         # recycle bad-leaves phase
+        logger.info("Start recycle bad-leaves phase")
         suppressed_nodes = list()
         if(len(bad_leaf_nodes) > 0):
             Node.recycle_bad_leaves(p_value, good_leaf_nodes, bad_leaf_nodes, suppressed_nodes, paa_value)
-
+        logger.info("Finish recycle bad-leaves phase")
         suppressed_nodes_list = list()
         for node in suppressed_nodes:
             suppressed_nodes_list.append(node.group) # suppressed nodes!!!
         
         # group formation phase
         # preprocessing
+        logger.info("Start group formation phase")
         pattern_representation_dict = dict() 
         p_group_list = list() 
         for node in good_leaf_nodes: 
@@ -518,13 +519,13 @@ def main_kapra(k_value=None, p_value=None, paa_value=None, dataset_path=None, ou
                 top_down_greedy_clustering(algorithm="kapra", time_series=p_group_to_split, partition_size=p_value, 
                                       time_series_clustered=p_group_splitted, tree_structure=tree_structure)
 
-                logger.info("Start postprocessing k-anonymity top down approach")
+                #logger.info("Start postprocessing k-anonymity top down approach")
                 time_series_postprocessed = list()
                 top_down_greedy_clustering_postprocessing(algorithm="kapra", time_series_clustered=p_group_splitted, 
                                                           tree_structure=tree_structure, partition_size=p_value,
                                                           time_series_postprocessed=time_series_postprocessed)
                                                   
-                logger.info("End postprocessing k-anonymity top down approach")
+                #logger.info("End postprocessing k-anonymity top down approach")
                 
                 p_group_to_add += time_series_postprocessed
                 index_to_remove.append(index)
@@ -574,6 +575,7 @@ def main_kapra(k_value=None, p_value=None, paa_value=None, dataset_path=None, ou
             k_group.update(p_group)
             k_group_list.append(k_group)
 
+        logger.info("Finish group formation phase")
         dataset_anonymized = DatasetAnonymized(pattern_anonymized_data=pattern_representation_dict,
                                                anonymized_data=k_group_list,
                                                suppressed_data=suppressed_nodes_list)
