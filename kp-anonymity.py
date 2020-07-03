@@ -593,7 +593,7 @@ if __name__ == "__main__":
         dataset_path = sys.argv[5]
         output_path = sys.argv[6]
         if k_value < p_value:
-            print("[*] Usage: python kp-anonymity.py algorithm k_value p_value paa_value dataset.csv output_name")
+            print("[*] Usage: python kp-anonymity.py algorithm k_value p_value paa_value dataset_path dataset_output_path")
             print("[*] k_value should be greater than p_value")
         elif algorithm == "naive":
             main_naive(k_value=k_value, p_value=p_value, paa_value=paa_value, 
@@ -602,8 +602,8 @@ if __name__ == "__main__":
             main_kapra(k_value=k_value, p_value=p_value, paa_value=paa_value, 
                        dataset_path=Path(dataset_path), output_path=Path(output_path))
         else:
-            print("[*] Usage: python kp-anonymity.py algorithm k_value p_value paa_value dataset.csv output_name")
+            print("[*] Usage: python kp-anonymity.py algorithm k_value p_value paa_value dataset_path dataset_output_path")
             print("[*] Algorithm supported: naive, kapra")
             
     else:
-        print("[*] Usage: python kp-anonymity.py algorithm k_value p_value paa_value dataset.csv output_name")
+        print("[*] Usage: python kp-anonymity.py algorithm k_value p_value paa_value dataset_path dataset_output_path")
