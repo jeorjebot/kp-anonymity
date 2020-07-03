@@ -1,10 +1,14 @@
 
 .DS_Store 
 .vscode
-Dataset/output.csv
-prova.py
-
 __pycache__
 
+# my files
+prova.py
 
+
+# dataset generated
+Dataset/Anonymized/*.csv
+Dataset/Input/*_final*.csv
+Dataset/output.csv
 
