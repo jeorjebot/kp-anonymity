@@ -1,8 +1,8 @@
 # Utils
 
 ## Time Utility
-To compare time scalability of **naive** approach vs **kapra** approach, modify DIM_DATASETS in *test* utility:
-```
+To compare time scalability of **naive** approach vs **kapra** approach, modify this parameter in *test* utility:
+```shell
 DIM_DATASETS='100 250 500 1000 1500'
 ```
 and then launch it!
