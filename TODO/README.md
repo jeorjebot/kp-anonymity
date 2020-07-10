@@ -1,4 +1,6 @@
 # TODO
+- Code readability
+    - improve kp-anonimity.py file readability
 - Data Structure
     - Pandas DataFrame to store time series?
     - dict to store DF, label, level and all anonymization process information?
